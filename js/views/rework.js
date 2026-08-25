@@ -1,4 +1,4 @@
-/* Záložka 5: rework — přehled z nahraných reportů
+/* Záložka 2: rework — přehled z nahraných reportů
    Rework se sleduje vedle scrapu, do QLR % se nezapočítává.
    Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */

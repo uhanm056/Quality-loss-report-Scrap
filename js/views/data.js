@@ -1,4 +1,4 @@
-/* Záložka 3: seznam načtených dnů, záloha a obnova
+/* Záložka 4: seznam načtených dnů, záloha a obnova
    
    Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */

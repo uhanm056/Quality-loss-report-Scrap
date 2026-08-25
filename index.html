@@ -19,11 +19,11 @@
 
 <div class="tabs">
   <button class="tab on" onclick="go(0,this)">📈 QLR měsíčně</button>
-  <button class="tab" onclick="go(1,this)">🏭 Denní přehled</button>
-  <button class="tab" onclick="go(2,this)">🔍 Detail projektu</button>
-  <button class="tab" onclick="go(3,this)">📥 Data &amp; import</button>
-  <button class="tab" onclick="go(4,this)">📋 Zdrojová data</button>
-  <button class="tab" onclick="go(5,this)">🔧 Rework</button>
+  <button class="tab" onclick="go(1,this)">🏭 Přehled scrapu</button>
+  <button class="tab" onclick="go(2,this)">🔧 Přehled reworku</button>
+  <button class="tab" onclick="go(3,this)">🔍 Detail projektu</button>
+  <button class="tab" onclick="go(4,this)">📥 Data &amp; import</button>
+  <button class="tab" onclick="go(5,this)">📋 Zdrojová data</button>
   <button class="tab" onclick="go(6,this)">⚙️ Nastavení</button>
 </div>
 
@@ -90,14 +90,28 @@
   </div>
 </div>
 
-<!-- ══════════ 1 · DENNÍ PŘEHLED ══════════ -->
+<!-- ══════════ 1 · PŘEHLED SCRAPU ══════════ -->
 <div class="view" id="v1"><div id="dashBody"></div></div>
 
-<!-- ══════════ 2 · DETAIL PROJEKTU ══════════ -->
-<div class="view" id="v2"><div id="projBody"></div></div>
+<!-- ══════════ 2 · PŘEHLED REWORKU ══════════ -->
+<div class="view" id="v2">
+  <div id="rwBody"></div>
+  <div class="drop" id="rwDrop">
+    <div class="ic">🔧</div>
+    <div class="t">Přetáhni sem report o reworku</div>
+    <div class="s">nebo klikni a vyber · .xlsx / .xls · můžeš i více souborů najednou</div>
+    <input type="file" id="rwFile" accept=".xlsx,.xls" multiple style="display:none">
+  </div>
+  <div class="panel"><div class="ph"><span>Načtené reporty o reworku</span>
+    <button class="btn gh" onclick="wipeRw()">🗑 Vymazat rework</button></div>
+    <div class="pb" id="rwDays"></div></div>
+</div>
 
-<!-- ══════════ 3 · DATA ══════════ -->
-<div class="view" id="v3">
+<!-- ══════════ 3 · DETAIL PROJEKTU ══════════ -->
+<div class="view" id="v3"><div id="projBody"></div></div>
+
+<!-- ══════════ 4 · DATA & IMPORT ══════════ -->
+<div class="view" id="v4">
   <div class="drop" id="dropZone">
     <div class="ic">📥</div>
     <div class="t">Přetáhni sem denní scrap report</div>
@@ -113,8 +127,8 @@
     <div class="pb" id="daysBody"></div></div>
 </div>
 
-<!-- ══════════ 4 · ZDROJOVÁ DATA ══════════ -->
-<div class="view" id="v4">
+<!-- ══════════ 5 · ZDROJOVÁ DATA ══════════ -->
+<div class="view" id="v5">
   <div class="panel"><div class="ph"><span>Jak se QLR počítá</span></div>
     <div class="pb" style="font-size:14px;line-height:1.9">
       <div style="background:var(--bg);border-radius:10px;padding:16px 20px;margin-bottom:14px">
@@ -137,20 +151,6 @@
   <div class="panel"><div class="ph"><span>Měsíční data — Quality loss report</span>
     <span style="font-weight:600;opacity:.85">leden 2024 – květen 2026</span></div>
     <div class="pb" style="overflow-x:auto;max-height:640px" id="srcBody"></div></div>
-</div>
-
-<!-- ══════════ 5 · REWORK ══════════ -->
-<div class="view" id="v5">
-  <div id="rwBody"></div>
-  <div class="drop" id="rwDrop">
-    <div class="ic">🔧</div>
-    <div class="t">Přetáhni sem report o reworku</div>
-    <div class="s">nebo klikni a vyber · .xlsx / .xls · můžeš i více souborů najednou</div>
-    <input type="file" id="rwFile" accept=".xlsx,.xls" multiple style="display:none">
-  </div>
-  <div class="panel"><div class="ph"><span>Načtené reporty o reworku</span>
-    <button class="btn gh" onclick="wipeRw()">🗑 Vymazat rework</button></div>
-    <div class="pb" id="rwDays"></div></div>
 </div>
 
 <!-- ══════════ 6 · NASTAVENÍ ══════════ -->

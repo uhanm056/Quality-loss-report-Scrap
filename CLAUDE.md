@@ -126,17 +126,24 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
 
 Šest záložek:
 
+Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
+
 1. **QLR měsíčně** — rolling 12M, year over year, scrap EUR. Historie 2024–2026
    je zapsaná přímo v kódu (pole `LBL`, `QW`, `QO`, `QT`, `EO`, `EW`, `SV`).
-2. **Denní přehled** — z denních reportů, tempo a prognóza k cíli.
-3. **Detail projektu** — pracoviště, reason kódy, kombinace. Bere denní data,
-   při jejich absenci padá zpět na měsíční `MDET`.
-4. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
-5. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
-6. **Rework** — z reportů o reworku, hodiny i EUR, rozpad podle projektů,
+2. **Přehled scrapu** — z denních reportů, tempo a prognóza k cíli.
+3. **Přehled reworku** — z reportů o reworku, hodiny i EUR, rozpad podle projektů,
    pracovišť, příčin a dílů. Vlastní import.
+4. **Detail projektu** — pracoviště, reason kódy, kombinace. Bere denní data,
+   při jejich absenci padá zpět na měsíční `MDET`.
+5. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
+6. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
 7. **Nastavení** — cíl v EUR, pracovní dny, cíl a sazba reworku, měsíční
    a projektové targety.
+
+Záložky se přepínají podle **pořadí v DOM**, ne podle `id` — `go(i)` sahá na
+`querySelectorAll('.view')[i]`. Když se dlaždice přeskládají, musí se spolu s nimi
+posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
+(`go`, `renderBar`, `openProj`, `setM`).
 
 ### Soubory
 
@@ -155,11 +162,11 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
 | `js/core/nav.js` | přepínání záložek, horní lišta |
 | `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
 | `js/views/top.js` | záložka 0 — TOP kontributoři a jejich rozpad |
-| `js/views/dash.js` | záložka 1 — denní přehled |
-| `js/views/project.js` | záložka 2 — detail projektu |
-| `js/views/data.js` | záložka 3 — seznam dnů, záloha, obnova |
-| `js/views/source.js` | záložka 4 — zdrojová data |
-| `js/views/rework.js` | záložka 5 — rework |
+| `js/views/dash.js` | záložka 1 — přehled scrapu |
+| `js/views/rework.js` | záložka 2 — přehled reworku |
+| `js/views/project.js` | záložka 3 — detail projektu |
+| `js/views/data.js` | záložka 4 — seznam dnů, záloha, obnova |
+| `js/views/source.js` | záložka 5 — zdrojová data |
 | `js/views/targets.js` | záložka 6 — targety a Sales |
 | `js/import/parser.js` | čtení denních `.xlsx` reportů |
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
