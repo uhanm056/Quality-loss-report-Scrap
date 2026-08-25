@@ -1,7 +1,12 @@
 # Quality Loss Report / Scrap — Yanfeng Plant 1032
 
-Aplikace pro sledování scrapu a Quality Loss Rate. Jeden samostatný HTML soubor
-(`index.html`), který se otevírá lokálně v prohlížeči. Bez buildu, bez serveru.
+Aplikace pro sledování scrapu a Quality Loss Rate. Otevírá se lokálně v prohlížeči
+poklepáním na `index.html`. Bez buildu, bez serveru, bez instalace.
+
+Kód je rozdělený do souborů (`css/`, `js/`), které `index.html` načítá jako
+**klasické `<script>` tagy — ne ES moduly**. Moduly by přes `file://` neprošly
+CORS a aplikace by se neotevřela z disku. Proto se skripty spoléhají na společný
+globální scope a **na pořadí načtení v `index.html`**.
 
 ---
 
@@ -112,7 +117,7 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
 
 ## Struktura aplikace
 
-`index.html` — jeden soubor, pět záložek:
+Šest záložek:
 
 1. **QLR měsíčně** — rolling 12M, year over year, scrap EUR. Historie 2024–2026
    je zapsaná přímo v kódu (pole `LBL`, `QW`, `QO`, `QT`, `EO`, `EW`, `SV`).
@@ -121,9 +126,44 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
    při jejich absenci padá zpět na měsíční `MDET`.
 4. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
 5. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
+6. **Nastavení** — cíl v EUR, pracovní dny, měsíční a projektové targety.
+
+### Soubory
+
+| Soubor | Co v něm je |
+|---|---|
+| `index.html` | jen HTML kostra záložek + seznam skriptů v pořadí načtení |
+| `css/styles.css` | všechny styly, Yanfeng paleta |
+| `js/data/qlr-history.js` | měsíční historie — `LBL`, `QW`, `QO`, `QT`, `EO`, `EW`, `SV`, `MONTHLY`, `YRSUM`, `TOPPARTS25/26` |
+| `js/data/monthly-detail.js` | `MDET` — měsíční rozpad podle projektů |
+| `js/data/targets.js` | `TGTM`, `PTGTM`, `PSAL`, `AUG` + `mKey`/`mTgt`/`mSales`/`pTgt`/`pSales` |
+| `js/data/locations.js` | `LOCNAMES` — názvy pracovišť |
+| `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
+| `js/core/storage.js` | `localStorage` — načtení a ukládání |
+| `js/core/aggregate.js` | součty a rozpady denních dat |
+| `js/core/nav.js` | přepínání záložek, horní lišta |
+| `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
+| `js/views/top.js` | záložka 0 — TOP kontributoři a jejich rozpad |
+| `js/views/dash.js` | záložka 1 — denní přehled |
+| `js/views/project.js` | záložka 2 — detail projektu |
+| `js/views/data.js` | záložka 3 — seznam dnů, záloha, obnova |
+| `js/views/source.js` | záložka 4 — zdrojová data |
+| `js/views/targets.js` | záložka 5 — targety a Sales |
+| `js/import/parser.js` | čtení denních `.xlsx` reportů |
+| `js/main.js` | start aplikace |
+
+**Pořadí skriptů v `index.html` je závazné:** data → jádro → záložky → import →
+start. `js/main.js` musí zůstat poslední — spouští první vykreslení. Nové soubory
+zařazovat podle toho, co používají při načtení, ne až při volání funkce.
+
+Funkce volané z HTML atributů (`onclick`, `onchange`) se přiřazují jako
+`window.nazev = ...`, aby zůstaly dostupné bez ohledu na to, ve kterém souboru jsou.
 
 Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`).
 Targety v `yf_tgtm` a `yf_ptgtm`.
+
+Chart.js, plugin datalabels a SheetJS se stahují z CDN — bez internetu se
+aplikace otevře, ale grafy a import nefungují.
 
 Klíčové datové struktury:
 
@@ -156,7 +196,7 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 
 ## Co je potřeba udělat
 
-- [ ] Rozdělit `index.html` — 126 KB v jednom souboru se špatně upravuje
+- [x] Rozdělit `index.html` — hotovo, kód je v `css/` a `js/`
 - [ ] Skript, který z QAD exportu vygeneruje datové bloky místo ručního přepisování
 - [ ] Doplnit srpnový QAD export → rozpad pracovišť za srpen
 - [ ] Ověřit červnovou tabulku, která nesedí s QAD (G463 M 6 269 € vs 51 538 €)

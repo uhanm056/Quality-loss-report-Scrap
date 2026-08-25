@@ -1,0 +1,23 @@
+/* Data: targety, Sales a odvozené pomocné funkce
+   TGTM, PTGTM, PSAL, AUG + mKey/mTgt/mSales/mPartial/pTgt/pSales. Target je v procentech (0.904 = 0,904 %) — nikdy nenásobit stem.
+   Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
+   Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
+
+let TGTM={"2026-01": {"t": 0.8936, "sales": 16189990}, "2026-02": {"t": 0.9025, "sales": 15788590}, "2026-03": {"t": 0.8053, "sales": 17944040}, "2026-04": {"t": 0.8728, "sales": 16920891}, "2026-05": {"t": 0.904, "sales": 15161360}, "2026-06": {"t": 0.8985, "sales": 17927513}, "2026-07": {"t": 0.8029, "sales": 16660896, "ci": 0.56}, "2026-08": {"t": 0.86, "ci": 0.54, "sales": 7711715, "part": 1}};
+let PTGTM={"2026-01": {"G463 M": [1.0879, null], "W177": [0.6678, null], "W247": [0.7955, null], "W206": [0.6128, null], "X540": [0.6283, null], "OV51/52": [0.3999, null], "OV64": [0.644, null], "SK336/1": [1.1873, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-02": {"G463 M": [1.09, null], "W177": [0.6712, null], "W247": [0.7936, null], "W206": [0.7166, null], "X540": [0.7244, null], "OV51/52": [0.3999, null], "OV64": [0.644, null], "SK336/1": [1.1953, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-03": {"G463 M": [1.3535, null], "W177": [0.6158, null], "W247": [0.7843, null], "W206": [0.9434, null], "X540": [0.7434, null], "OV51/52": [0.3999, null], "OV64": [0.6441, null], "SK336/1": [0.7327, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-04": {"G463 M": [1.0861, null], "W177": [0.6173, null], "W247": [0.7288, null], "W206": [0.7527, null], "X540": [0.7262, null], "OV51/52": [0.3998, null], "OV64": [0.6135, null], "SK336/1": [0.9453, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-05": {"G463 M": [1.084, null], "W177": [0.6188, null], "W247": [0.7305, null], "W206": [1.1254, null], "X540": [0.7201, null], "OV51/52": [0.3999, null], "OV64": [0.6135, null], "SK336/1": [0.9452, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-06": {"G463 M": [1.0864, null], "W177": [0.6261, null], "W247": [0.7307, null], "W206": [1.1126, null], "X540": [0.7413, null], "W520": [0.9967, null], "OV51/52": [0.3999, null], "OV64": [0.6135, null], "SK336/1": [0.947, null], "SK371": [1.5, null], "AU38X": [3.0, null]}, "2026-07": {"G463 M": [1.0919, 0.65], "W177": [0.5286, 0.45], "W247": [0.7152, 0.63], "W206": [1.0602, 0.58], "X540": [0.3666, 0.37], "W520": [0.3811, 0.38], "OV51/52": [0.3998, 0.36], "OV64": [0.4518, 0.07], "SK336/1": [0.9643, 0.83], "SK371": [1.5, 1.12], "AU38X": [3.0, 2.79]}, "2026-08": {"G463 M": [1.09, 0.49], "W177": [0.58, 0.51], "W247": [0.72, 0.65], "W206": [0.58, 0.13], "X540": [0.63, 0.63], "W520": [0.66, 0.66], "OV51/52": [0.4, 0.36], "OV64": [0.51, 0.27], "SK336/1": [0.98, 0.85], "SK371": [1.5, 1.14], "AU38X": [3.0, 2.8]}};
+const PSAL={"2026-06": {"G463 M": 8559955, "W177": 926550, "W247": 2709448, "W206": 146229, "X540": 749746, "OV51/52": 1459337, "OV64": 1560088, "SK336/1": 1374609, "SK371": 186652, "AU38X": 254899}, "2026-07": {"G463 M": 7674411, "W177": 1301459, "W247": 2902958, "W206": 96761, "X540": 1408104, "W520": 256608, "OV51/52": 801154, "OV64": 1101028, "SK336/1": 755183, "SK371": 94474, "AU38X": 268756}, "2026-08": {"G463 M": 1981164, "W177": 804263, "W247": 1492942, "W206": 148828, "X540": 1138024, "W520": 3653, "OV51/52": 572463, "OV64": 700924, "SK336/1": 584568, "SK371": 124772, "AU38X": 160114}};
+/* target projektu pro měsíc — když měsíc chybí, vezme nejbližší dřívější */
+function pTgt(m,p){const k=mKey(m);if(PTGTM[k]&&PTGTM[k][p])return PTGTM[k][p];
+  const ks=Object.keys(PTGTM).sort().filter(x=>x<=k).reverse();
+  for(const x of ks)if(PTGTM[x][p])return PTGTM[x][p];return null}
+const pSales=(m,p)=>(PSAL[mKey(m)]||{})[p]||null;
+const AUG={"G463 M": [15974, 1981164], "W177": [5290, 804263], "W247": [9975, 1492942], "W206": [2951, 148828], "X540": [13824, 1138024], "W520": [3247, 3653], "OV51/52": [1402, 572463], "OV64": [470, 700924], "SK336/1": [3881, 584568], "SK371": [677, 124772], "AU38X": [1987, 160114]};
+/* srpen do MDET jako projektové součty (bez rozpadu lokací) */
+MDET['8']={};Object.entries(AUG).forEach(([p,v])=>{MDET['8'][p]={wt:v[0],wo:v[0],sales:v[1],L:[],R:[],P:[]}});
+/* sales per projekt i pro srpen dostupné, u ostatních měsíců neznáme */
+const mKey=m=>'2026-'+String(m).padStart(2,'0');
+const mTgt=m=>(TGTM[mKey(m)]||{}).t||null;
+const mSales=m=>(TGTM[mKey(m)]||{}).sales||null;
+const mPartial=m=>!!(TGTM[mKey(m)]||{}).part;
+const R12=QW.map((_,i)=>i<11?null:+(QW.slice(i-11,i+1).reduce((a,b)=>a+b,0)/12).toFixed(4));
+const MO3=['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
