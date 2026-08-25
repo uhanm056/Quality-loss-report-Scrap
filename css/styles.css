@@ -84,6 +84,7 @@ border-right:1px solid rgba(255,255,255,.2);cursor:pointer;color:rgba(255,255,25
 .prow{display:grid;grid-template-columns:34px 118px 1fr 96px 96px 26px;align-items:center;gap:12px;
 padding:12px 14px;border-radius:10px;background:var(--bg);border-left:5px solid transparent;
 cursor:pointer;transition:transform .1s,background .1s}
+.prow.rw{grid-template-columns:34px 118px 1fr 96px 158px 26px}
 .prow:hover{background:var(--light);transform:translateX(3px)}
 .prow.hot{border-left-color:var(--red)}
 .prank{width:30px;height:30px;border-radius:8px;background:var(--mid);color:#fff;

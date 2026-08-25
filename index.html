@@ -14,7 +14,7 @@
 <div class="header">
   <div><h1>Scrap &amp; Quality Loss Rate</h1>
   <div class="sub">Yanfeng Automotive Interiors · Plant 1032</div></div>
-  <div class="hb"><span class="hbadge" id="hb1">—</span><span class="hbadge" id="hb2">—</span></div>
+  <div class="hb"><span class="hbadge" id="hb1">—</span><span class="hbadge" id="hb2">—</span><span class="hbadge" id="hb3" style="display:none">—</span></div>
 </div>
 
 <div class="tabs">
@@ -23,7 +23,8 @@
   <button class="tab" onclick="go(2,this)">🔍 Detail projektu</button>
   <button class="tab" onclick="go(3,this)">📥 Data &amp; import</button>
   <button class="tab" onclick="go(4,this)">📋 Zdrojová data</button>
-  <button class="tab" onclick="go(5,this)">⚙️ Nastavení</button>
+  <button class="tab" onclick="go(5,this)">🔧 Rework</button>
+  <button class="tab" onclick="go(6,this)">⚙️ Nastavení</button>
 </div>
 
 <div class="sbar" id="sbar"></div>
@@ -138,14 +139,34 @@
     <div class="pb" style="overflow-x:auto;max-height:640px" id="srcBody"></div></div>
 </div>
 
-<!-- ══════════ 5 · NASTAVENÍ ══════════ -->
+<!-- ══════════ 5 · REWORK ══════════ -->
 <div class="view" id="v5">
+  <div id="rwBody"></div>
+  <div class="drop" id="rwDrop">
+    <div class="ic">🔧</div>
+    <div class="t">Přetáhni sem report o reworku</div>
+    <div class="s">nebo klikni a vyber · .xlsx / .xls · můžeš i více souborů najednou</div>
+    <input type="file" id="rwFile" accept=".xlsx,.xls" multiple style="display:none">
+  </div>
+  <div class="panel"><div class="ph"><span>Načtené reporty o reworku</span>
+    <button class="btn gh" onclick="wipeRw()">🗑 Vymazat rework</button></div>
+    <div class="pb" id="rwDays"></div></div>
+</div>
+
+<!-- ══════════ 6 · NASTAVENÍ ══════════ -->
+<div class="view" id="v6">
   <div class="panel"><div class="ph"><span>Nastavení</span></div>
     <div class="pb">
       <div class="setrow"><label>Měsíční cíl scrapu závodu (EUR)</label>
         <input class="inp" type="number" id="sTgt" onchange="saveSet()"></div>
       <div class="setrow"><label>Počet pracovních dnů v měsíci</label>
         <input class="inp" type="number" id="sDays" onchange="saveSet()"></div>
+      <div class="setrow"><label>Měsíční cíl reworku (EUR)</label>
+        <input class="inp" type="number" id="sRwTgt" onchange="saveSet()">
+        <span style="font-size:12px;color:var(--muted)">0 = bez cíle, ukazuje se jen skutečnost</span></div>
+      <div class="setrow"><label>Sazba reworku (EUR / hod)</label>
+        <input class="inp" type="number" id="sRwRate" onchange="saveSet()">
+        <span style="font-size:12px;color:var(--muted)">použije se, jen když report nemá sloupec s částkou</span></div>
       <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:14px;
       padding-top:14px;border-top:1px solid var(--border)">
       <b>QLR měsíčně</b> pracuje s historií leden 2024 – květen 2026, která je součástí aplikace.<br>
@@ -183,6 +204,7 @@
 <script src="js/core/utils.js"></script>
 <script src="js/core/storage.js"></script>
 <script src="js/core/aggregate.js"></script>
+<script src="js/core/rework.js"></script>
 <script src="js/core/nav.js"></script>
 
 <!-- jednotlivé záložky -->
@@ -193,9 +215,11 @@
 <script src="js/views/data.js"></script>
 <script src="js/views/source.js"></script>
 <script src="js/views/targets.js"></script>
+<script src="js/views/rework.js"></script>
 
 <!-- import denních reportů -->
 <script src="js/import/parser.js"></script>
+<script src="js/import/rework-parser.js"></script>
 
 <!-- start -->
 <script src="js/main.js"></script>

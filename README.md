@@ -15,7 +15,7 @@ Soubory `css/` a `js/` musí zůstat vedle `index.html`.
 | `js/data/` | data zapsaná v aplikaci — historie QLR, targety, názvy pracovišť |
 | `js/core/` | jádro — formátování, úložiště, agregace, navigace |
 | `js/views/` | jednotlivé záložky |
-| `js/import/` | čtení denních `.xlsx` reportů |
+| `js/import/` | čtení denních `.xlsx` reportů — scrap i rework |
 | `js/main.js` | start aplikace |
 
 Podrobnosti k výpočtům a datům jsou v [CLAUDE.md](CLAUDE.md).
