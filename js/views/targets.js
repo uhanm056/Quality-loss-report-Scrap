@@ -1,4 +1,4 @@
-/* Záložka 5: nastavení targetů a Sales
+/* Záložka 6: nastavení targetů a Sales
    
    Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
