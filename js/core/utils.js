@@ -11,6 +11,8 @@ const CH={};
 const fE=v=>Math.round(v||0).toLocaleString('cs-CZ')+' €';
 const fk=v=>Math.round((v||0)/1000).toLocaleString('cs-CZ')+' k€';
 const fN=v=>Math.round(v||0).toLocaleString('cs-CZ');
+/* drobné částky s haléři — u ceny na kus je 0 € k ničemu */
+const fEs=v=>Math.abs(v||0)<10?(v||0).toFixed(2).replace('.',',')+' €':fE(v);
 const f3=v=>v==null?'—':v.toFixed(3)+'%';
 const esc=s=>String(s).replace(/'/g,"\\'");
 const grd={color:'rgba(27,58,92,.07)'};

@@ -31,7 +31,7 @@ function renderRework(){
   const ms=rwMonths();
   if(!curRwMonth||!ms.includes(curRwMonth))curRwMonth=ms.length?ms[ms.length-1]:null;
   const m=curRwMonth;
-  renderRwDays();
+  renderRwDays(ms.length?(curRwMonth||ms[ms.length-1]):null);
   if(!m||!rwDays(m).length){
     bar3.style.display='none';
     box.innerHTML='<div class="panel"><div class="pb"><div class="empty">'+
@@ -41,7 +41,7 @@ function renderRework(){
       'hodiny nebo EUR. Rozpad podle projektů, pracovišť a příčin se doplní, pokud je v souboru.</span>'+
       '</div></div></div>';return}
   const ks=rwDays(m),n=ks.length,tot=rwEur(m),hrs=rwHrs(m),qty=rwQty(m);
-  const per=tot/n,wd=SET.workdays||21,fc=per*wd,tgt=+SET.rwTarget||0;
+  const per=tot/n,P=pace(ks,m),fc=P.ok?tot/P.share:null,tgt=+SET.rwTarget||0;
   const yy=m.slice(0,4),mm=+m.slice(5,7),mLab=MN[mm-1]+' '+yy;
   const dw=n===1?'den':(n<5?'dny':'dnů');
   const scrap=daysOf(m).length?sumM(m):0;
@@ -50,14 +50,18 @@ function renderRework(){
 
   /* stav proti cíli — jen když je cíl zadaný, jinak se nic nevymýšlí */
   let head='';
-  if(tgt){const allow=tgt/wd*n;let cls,ic,hd,tx;
-    if(fc>tgt*1.02){cls='bad';ic='⛔';hd='Rework míří nad cíl';
-      tx='Tempem '+fE(per)+' za den skončíme na <b>'+fE(fc)+'</b> — o '+fE(fc-tgt)+' nad cílem.'}
-    else if(fc>tgt*.92){cls='warn';ic='⚠️';hd='Cíl reworku je na hraně';
-      tx='Prognóza konce měsíce <b>'+fE(fc)+'</b> proti cíli '+fE(tgt)+'. Rezerva je malá.'}
-    else{cls='ok';ic='✅';hd='Rework drží tempo';
-      tx='Tempem '+fE(per)+' za den skončíme kolem <b>'+fE(fc)+'</b>, tedy '+fE(tgt-fc)+' pod cílem.'}
-    tx+=' Zatím '+n+' '+dw+' z '+wd+'. K dnešku povoleno '+fE(allow)+'.';
+  if(tgt&&fc!=null){const allow=tgt*P.share,D=P.done;let cls,ic,hd,tx;
+    if(fc>tgt*1.02){cls='bad';ic='⛔';hd=D?'Rework skončil nad cílem':'Rework míří nad cíl';
+      tx=D?'Měsíc skončil na <b>'+fE(fc)+'</b> — o '+fE(fc-tgt)+' nad cílem '+fE(tgt)+'.':
+        'Tempem '+fE(per)+' za den skončíme na <b>'+fE(fc)+'</b> — o '+fE(fc-tgt)+' nad cílem.'}
+    else if(fc>tgt*.92){cls='warn';ic='⚠️';hd=D?'Cíl jsme uhájili těsně':'Cíl reworku je na hraně';
+      tx=(D?'Měsíc skončil na <b>':'Prognóza konce měsíce <b>')+fE(fc)+'</b> proti cíli '+
+        fE(tgt)+'. Rezerva je malá.'}
+    else{cls='ok';ic='✅';hd=D?'Skončili jsme pod cílem':'Rework drží tempo';
+      tx=D?'Měsíc skončil na <b>'+fE(fc)+'</b>, tedy '+fE(tgt-fc)+' pod cílem '+fE(tgt)+'.':
+        'Tempem '+fE(per)+' za den skončíme kolem <b>'+fE(fc)+'</b>, tedy '+fE(tgt-fc)+' pod cílem.'}
+    tx+=' '+(D?'Napočítáno z ':'Zatím ')+n+' '+dw+' s daty, k '+P.last+'. dni z '+P.dim+'.'+
+      (D?'':' K dnešku povoleno '+fE(allow)+'.');
     head='<div class="status '+cls+'"><div class="st-i">'+ic+'</div>'+
       '<div class="st-t"><h2>'+hd+'</h2><p>'+tx+'</p></div>'+
       '<div class="st-n"><div class="big">'+fE(tot)+'</div>'+
@@ -70,17 +74,21 @@ function renderRework(){
     '<b>EUR jsou dopočítané ze sazby '+fE(SET.rwRate)+' / hod.</b> '+
     'Nahraný report neměl sloupec s částkou, jen hodiny. Sazbu upravíte v Nastavení.</div></div>':'';
 
+  const BL=rwBreak(m,'l'),BR=rwBreak(m,'r'),BI=rwBreak(m,'it');
   box.innerHTML=calcWarn+head+
   '<div class="grid4">'+
   '<div class="kpi '+(tgt?(tot>tgt?'r':'g'):'b')+'"><div class="kpi-l">Rework EUR — '+mLab+'</div>'+
     '<div class="kpi-v">'+fE(tot)+'</div><div class="kpi-s">'+n+' '+dw+' · průměr '+fE(per)+' / den</div></div>'+
   '<div class="kpi a"><div class="kpi-l">Hodiny reworku</div><div class="kpi-v">'+fH(hrs)+'</div>'+
-    '<div class="kpi-s">'+fH(hrs/n)+' na den'+(hrs?' · '+fE(tot/hrs)+' / hod':'')+'</div></div>'+
+    '<div class="kpi-s">'+fH(hrs/n)+' na den'+(hrs?' · '+fEs(tot/hrs)+' / hod':'')+'</div></div>'+
   '<div class="kpi b"><div class="kpi-l">Opravených kusů</div><div class="kpi-v">'+fN(qty)+'</div>'+
-    '<div class="kpi-s">'+(qty?fE(tot/qty)+' na kus':'počet kusů report neuvádí')+'</div></div>'+
-  '<div class="kpi '+(tgt?(fc>tgt?'r':'g'):'b')+'"><div class="kpi-l">Prognóza konce měsíce</div>'+
-    '<div class="kpi-v">'+fk(fc)+'</div><div class="kpi-s">'+
-    (tgt?'cíl '+fk(tgt):'bez cíle · '+fH(hrs/n*wd)+' za měsíc')+'</div></div></div>'+
+    '<div class="kpi-s">'+(qty?fEs(tot/qty)+' na kus':'počet kusů report neuvádí')+'</div></div>'+
+  '<div class="kpi '+(tgt&&fc!=null?(fc>tgt?'r':'g'):'b')+'">'+
+    '<div class="kpi-l">'+(P.done?'Skutečnost za měsíc':'Prognóza konce měsíce')+'</div>'+
+    '<div class="kpi-v">'+(fc!=null?fk(fc):'—')+'</div><div class="kpi-s">'+
+    (fc==null?'dny nepokrývají celý měsíc':
+      (P.done?'měsíc je kompletní':'k '+P.last+'. dni z '+P.dim)+(tgt?' · cíl '+fk(tgt):''))+
+    '</div></div></div>'+
   '<div class="panel"><div class="ph"><span>Denní vývoj reworku — '+mLab+'</span>'+
     '<div class="legend" style="color:rgba(255,255,255,.85)">'+
     '<span><span class="sw" style="background:#9CC5E8"></span>EUR</span>'+
@@ -94,13 +102,7 @@ function renderRework(){
     '</div></div>'+
   '<div class="panel"><div class="ph"><span>Projekty — '+mLab+'</span></div>'+
     '<div class="pb"><div style="display:flex;flex-direction:column;gap:9px" id="rwProj"></div></div></div>'+
-  '<div class="two">'+
-    '<div class="panel"><div class="ph"><span>Pracoviště</span></div>'+
-      '<div class="pb" style="overflow-x:auto" id="rwLoc"></div></div>'+
-    '<div class="panel"><div class="ph"><span>Příčiny</span></div>'+
-      '<div class="pb" style="overflow-x:auto" id="rwRsn"></div></div></div>'+
-  '<div class="panel"><div class="ph"><span>Nejdražší díly</span></div>'+
-    '<div class="pb" style="overflow-x:auto" id="rwItem"></div></div>';
+  breakPanels(m);
 
   mk('cRw',{data:{labels:ks.map(k=>k.slice(8)+'.'+k.slice(5,7)+'.'),datasets:[
     {type:'bar',label:'EUR',data:ks.map(k=>RW[k].eur),backgroundColor:'#9CC5E8',
@@ -129,13 +131,39 @@ function renderRework(){
       '<span class="v">'+fE(v.e)+'</span>'+
       '<span class="pc">'+Math.round(v.e/tot*100)+' %'+(v.h?' · '+fH(v.h):'')+
         (v.q?' · '+fN(v.q)+' ks':'')+'</span><span class="ar"></span></div>'}).join('')}
-  document.getElementById('rwLoc').innerHTML=rwTbl(rwBreak(m,'l'),tot,'loc');
-  document.getElementById('rwRsn').innerHTML=rwTbl(rwBreak(m,'r'),tot,'rsn');
-  document.getElementById('rwItem').innerHTML=rwTbl(rwBreak(m,'it'),tot,'item')}
+  const put=(id,rows,type)=>{const e=document.getElementById(id);
+    if(e)e.innerHTML=rwTbl(rows,tot,type)};
+  put('rwLoc',BL,'loc');put('rwRsn',BR,'rsn');put('rwItem',BI,'item')}
 
-function renderRwDays(){
-  const ks=Object.keys(RW).sort().reverse(),b=document.getElementById('rwDays');
-  if(!ks.length){b.innerHTML='<div class="empty">Zatím nejsou načtené žádné reporty o reworku.</div>';return}
+/* panely rozpadu — co report neobsahuje, se neukazuje jako prázdná tabulka */
+function breakPanels(m){
+  const L=rwBreak(m,'l').length,R=rwBreak(m,'r').length,I=rwBreak(m,'it').length;
+  const pan=(t,id)=>'<div class="panel"><div class="ph"><span>'+t+'</span></div>'+
+    '<div class="pb" style="overflow-x:auto" id="'+id+'"></div></div>';
+  let out='';
+  if(L&&R)out+='<div class="two">'+pan('Pracoviště','rwLoc')+pan('Příčiny','rwRsn')+'</div>';
+  else if(L)out+=pan('Pracoviště','rwLoc');
+  else if(R)out+=pan('Příčiny','rwRsn');
+  if(I)out+=pan('Nejdražší díly','rwItem');
+  const chybi=[];if(!L)chybi.push('pracoviště');if(!R)chybi.push('důvod reworku');
+  if(chybi.length)out+='<div class="warnbox"><span style="font-size:26px">📄</span><div>'+
+    '<b>Report neobsahuje '+chybi.join(' ani ')+'.</b> Rozpad podle '+chybi.join(' a ')+
+    ' se doplní sám, jakmile v souboru takový sloupec bude — hledá se podle názvu.</div></div>';
+  return out}
+
+/* seznam dnů jen za vybraný měsíc — master soubor za celý rok jich má přes sto */
+function renderRwDays(m){
+  const all=Object.keys(RW),b=document.getElementById('rwDays');
+  const ks=(m?all.filter(k=>k.startsWith(m)):all).sort().reverse();
+  const t=document.getElementById('rwDaysTitle');
+  if(t)t.textContent='Načtené dny'+(m?' — '+MN[+m.slice(5,7)-1]+' '+m.slice(0,4):'');
+  if(!all.length){b.innerHTML='<div class="empty">Zatím nejsou načtené žádné reporty o reworku.</div>';return}
+  if(!ks.length){b.innerHTML='<div class="empty" style="padding:22px">'+
+    'Za tenhle měsíc nejsou žádné dny. Celkem je načteno '+all.length+' dnů v '+
+    rwMonths().length+' měsících — přepněte měsíc nahoře.</div>';return}
+  const foot='<div style="font-size:12px;color:var(--muted);margin-top:12px">Celkem načteno <b>'+
+    all.length+'</b> dnů v '+rwMonths().length+' měsících. Tabulka ukazuje vybraný měsíc; '+
+    'tlačítko <b>Vymazat rework</b> smaže všechno.</div>';
   b.innerHTML='<table class="tbl"><thead><tr><th>Datum</th><th>Soubor</th><th class="num">EUR</th>'+
     '<th class="num">Hodin</th><th class="num">Kusů</th><th class="num">Projektů</th><th></th></tr></thead><tbody>'+
     ks.map(k=>{const d=RW[k];
@@ -145,7 +173,7 @@ function renderRwDays(){
       '<td class="num">'+fN(d.qty)+'</td>'+
       '<td class="num">'+Object.keys(d.p||{}).length+'</td>'+
       '<td style="text-align:right"><button class="btn dngr" onclick="delRwDay(\''+k+'\')">smazat</button></td></tr>'}).join('')+
-    '</tbody></table>'}
+    '</tbody></table>'+foot}
 
 window.setRwM=m=>{curRwMonth=m;renderBar();renderRework()};
 window.delRwDay=k=>{if(!confirm('Smazat rework za '+k.split('-').reverse().join('.')+'?'))return;

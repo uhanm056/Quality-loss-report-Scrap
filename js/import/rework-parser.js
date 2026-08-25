@@ -7,13 +7,16 @@
 
 /* názvy sloupců, které v exportu hledáme — první shoda vyhrává */
 const RWCOL={
-  eur:['EUR','Cost Total','Total Cost','Rework Cost','Náklady','Hodnota','Value','Cost'],
-  hrs:['Rework Hours','Total Hours','Labor Hours','Hours','Hrs','Hodiny','Čas','Time'],
+  eur:['Náklad (€)','EUR','Cost Total','Total Cost','Rework Cost','Náklad','Naklad',
+       'Náklady','Hodnota','Value','Cost'],
+  hrs:['Doba (h)','Rework Hours','Total Hours','Labor Hours','Hours','Hrs','Hodiny',
+       'Doba','Čas','Time'],
   date:['Effective Date','Posting Date','Date','Datum','Den'],
   proj:['Group 2','Projekt','Project','Group'],
   loc:['Location','Work Center','Pracoviště','Pracoviste','WC'],
   rsn:['Reason'],
-  desc:['Description reason','Reason Code Description','Popis','Defect','Vada'],
+  desc:['Důvod reworku','Description reason','Reason Code Description','Důvod','Duvod',
+        'Popis','Defect','Vada'],
   qty:['Quantity Change','Quantity','Qty','Množství','Mnozstvi','Ks','Pieces'],
   item:['Item Number','Part Number','Díl','Dil','Part'],
   excl:['Excluded?','Excluded','Vyloučeno']};
@@ -50,21 +53,25 @@ function parseRW(wb){
     const day=days[k]=days[k]||{eur:0,hrs:0,qty:0,p:{},calc:calc};
     day.eur+=eur;day.hrs+=hrs;day.qty+=q;
     const pn=(iP>=0?String(r[iP]||'').trim():'')||'Neurčeno';
-    const lc=(iL>=0?String(r[iL]||'').trim().toUpperCase():'')||'—';
+    const lc=iL>=0?String(r[iL]||'').trim().toUpperCase():'';
     const cd=(iC>=0&&iC!==iS)?String(r[iC]||'').trim():'';
     const ds=iS>=0?String(r[iS]||'').trim():'';
-    const rk=cd+'§'+(ds||'—');
     const it=iI>=0?String(r[iI]||'').trim():'';
     const P=day.p[pn]=day.p[pn]||{e:0,h:0,q:0,l:{},r:{},it:{}};
     P.e+=eur;P.h+=hrs;P.q+=q;
-    bump(P.l,lc,eur,hrs,q);bump(P.r,rk,eur,hrs,q);
+    /* prázdné sloupce nezapisovat — jinak by tabulky ukazovaly jeden řádek „—" */
+    if(lc)bump(P.l,lc,eur,hrs,q);
+    if(cd||ds)bump(P.r,cd+'§'+(ds||'—'),eur,hrs,q);
     if(it)bump(P.it,it,eur,hrs,q);used++}
   if(!used)throw new Error('Nenašel jsem žádné použitelné řádky s reworkem.');
-  const r1=v=>Math.round(v*10)/10;
-  const trim=(m,n)=>{const o={};Object.entries(m).filter(([k,v])=>v.e>0.5||v.h>0.05)
-    .sort((a,b)=>b[1].e-a[1].e).slice(0,n).forEach(([k,v])=>o[k]={e:Math.round(v.e),h:r1(v.h),q:Math.round(v.q)});return o};
-  Object.values(days).forEach(d=>{d.eur=Math.round(d.eur);d.hrs=r1(d.hrs);d.qty=Math.round(d.qty);
-    Object.values(d.p).forEach(P=>{P.e=Math.round(P.e);P.h=r1(P.h);P.q=Math.round(P.q);
+  /* tři desetinná místa — hodnoty se sčítají po dnech a měsíc pak sedí
+     se souhrnem v samotném souboru na celé EUR; duben vychází 9418,502
+     a při hrubším zaokrouhlení by spadl na 9418 místo 9419 */
+  const r2=v=>Math.round(v*1000)/1000;
+  const trim=(m,n)=>{const o={};Object.entries(m).filter(([k,v])=>v.e>0.005||v.h>0.005)
+    .sort((a,b)=>b[1].e-a[1].e).slice(0,n).forEach(([k,v])=>o[k]={e:r2(v.e),h:r2(v.h),q:Math.round(v.q)});return o};
+  Object.values(days).forEach(d=>{d.eur=r2(d.eur);d.hrs=r2(d.hrs);d.qty=Math.round(d.qty);
+    Object.values(d.p).forEach(P=>{P.e=r2(P.e);P.h=r2(P.h);P.q=Math.round(P.q);
       P.l=trim(P.l,30);P.r=trim(P.r,40);P.it=trim(P.it,20)})});
   return{days,used,skip,calc}}
 

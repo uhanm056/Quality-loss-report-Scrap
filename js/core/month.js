@@ -15,6 +15,27 @@ const mLabel=k=>MN[+k.slice(5,7)-1]+' '+k.slice(0,4);
 function prevKey(k){const ks=Object.keys(TGTM).filter(x=>TGTM[x].t!=null&&TGTM[x].sales).sort();
   const i=ks.indexOf(k);return i>0?ks[i-1]:null}
 
+/* kolik dnů má měsíc '2026-08' */
+const daysInMonth=k=>new Date(+k.slice(0,4),+k.slice(5,7),0).getDate();
+
+/* jak daleko je měsíc podle posledního dne, ke kterému máme data.
+   Počet nahraných dnů se na to použít nedá — závod nejede každý den stejně
+   a dnů s reportem bývá víc než plánovaných pracovních dnů. */
+function pace(keys,k){
+  if(!keys.length)return null;
+  const dim=daysInMonth(k),last=+keys[keys.length-1].slice(8);
+  const now=new Date(),cur=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  /* měsíc je uzavřený, když má data do konce nebo už dávno skončil */
+  const done=last>=dim||k<cur;
+  const share=done?1:Math.min(1,last/dim);
+  /* jakou část uplynulých dnů reporty pokrývají — když jich je nahraná jen
+     hrstka, chybějící dny nejsou nuly a prognóza by lhala směrem dolů */
+  const cover=keys.length/last;
+  return{n:keys.length,dim:dim,last:last,share:share,done:done,cover:cover,
+    ok:cover>=0.5,
+    /* kolik dnů s výrobou měsíc nejspíš bude mít, když tempo vydrží */
+    exp:Math.max(keys.length,Math.round(keys.length/share))}}
+
 /* cíl v EUR pro měsíc — null, když měsíc v tabulce chybí */
 function cilEur(k){const o=TGTM[k]||{};
   return o.t!=null&&o.sales?o.t/100*o.sales:null}

@@ -4,7 +4,7 @@
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
 
 const KEY='yf_scrap_daily_v2',RKEY='yf_rework_daily_v1',SKEY='yf_scrap_set_v1';
-let DB={},RW={},SET={target:95000,workdays:21,rwTarget:0,rwRate:30};
+let DB={},RW={},SET={rwTarget:0,rwRate:30};
 try{DB=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){DB={}}
 try{RW=JSON.parse(localStorage.getItem(RKEY)||'{}')}catch(e){RW={}}
 if(!Object.keys(DB).length){try{const o=JSON.parse(localStorage.getItem('yf_scrap_daily_v1')||'{}');
