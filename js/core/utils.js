@@ -14,6 +14,9 @@ const fN=v=>Math.round(v||0).toLocaleString('cs-CZ');
 const f3=v=>v==null?'—':v.toFixed(3)+'%';
 const esc=s=>String(s).replace(/'/g,"\\'");
 const grd={color:'rgba(27,58,92,.07)'};
+/* hodnota bodu pro plugin datalabels — jeho kontext má jen
+   {active,chart,dataIndex,dataset,datasetIndex}, žádné c.raw */
+const dlVal=c=>c.dataset.data[c.dataIndex];
 const mk=(id,cfg)=>{const el=document.getElementById(id);if(!el)return;
   if(CH[id])CH[id].destroy();CH[id]=new Chart(el,cfg)};
 function toast(m,c){const t=document.getElementById('toast');t.textContent=m;
