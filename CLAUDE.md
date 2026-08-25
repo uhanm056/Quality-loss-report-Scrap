@@ -158,11 +158,12 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
+| `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
 | `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
 | `js/views/top.js` | záložka 0 — TOP kontributoři a jejich rozpad |
-| `js/views/dash.js` | záložka 1 — přehled scrapu |
+| `js/views/dash.js` | záložka 1 — přehled scrapu, měsíční výsledek a denní tempo |
 | `js/views/rework.js` | záložka 2 — přehled reworku |
 | `js/views/project.js` | záložka 3 — detail projektu |
 | `js/views/data.js` | záložka 4 — seznam dnů, záloha, obnova |
@@ -193,6 +194,37 @@ Klíčové datové struktury:
 - `PTGTM` — měsíc → projekt → `[target, targetCI]`
 - `PSAL` — měsíc → projekt → Sales
 - `RW` — den → `{eur, hrs, qty, calc, src, p:{projekt:{e,h,q, l{}, r{}, it{}}}}`
+
+### Měsíční výsledek proti targetu
+
+Počítá `js/core/month.js`, ukazuje záložka **Přehled scrapu**.
+
+```
+cíl v EUR   = target % × Sales        (obojí z TGTM, tabulka v Nastavení)
+skutečnost %= scrap EUR / Sales × 100
+rezerva     = cíl v EUR − skutečnost  (kladná = pod cílem)
+```
+
+Skutečnost se bere z prvního dostupného zdroje v tomto pořadí a ten se **vždy
+napíše do UI**:
+
+1. `EO` — ověřený scrap report (uzavřené měsíce)
+2. `MDET` — měsíční QAD export
+3. denní reporty z `DB`
+
+Pro červenec dá `EO` 100 474 € a `MDET` 100 475 € — přednost má report.
+
+**U probíhajícího měsíce (`part`) jsou scrap i Sales ke stejnému snímku dat.**
+Cíl v EUR je proto taky jen k tomu snímku. Prognóza z denního tempa je za celý
+měsíc, takže se s tímhle cílem **neporovnává** — v UI je to napsané a porovnává
+se v % ze Sales.
+
+Jediný odhad v aplikaci je panel „Odhad celého měsíce": vezme dosavadní % a
+Sales předchozího měsíce. Předpoklad je napsaný v hlavičce panelu. Jakmile se
+do Nastavení doplní skutečné Sales, počítá se všechno znovu z reálných čísel.
+
+Kumulativ 2026 sečte měsíční cíle a skutečnosti. Rezerva se může o pár set EUR
+lišit od `SV` (saving ze scrap reportu) — `SV` se počítá až po uzávěrce.
 
 ### Rework
 
