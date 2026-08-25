@@ -28,10 +28,10 @@ function renderBar(){
       '<button class="chip '+(qSub===i?'on':'')+'" onclick="setQSub('+i+')">'+t+'</button>').join('')}
   else if(curTab===1||curTab===3){
     let ms=monthsAvail();
-    if(curTab===3){const md=Object.keys(MDET).map(m=>mKey(+m));
-      ms=[...new Set(ms.concat(md))].sort()}
+    const md=Object.keys(MDET).map(m=>mKey(+m));
+    ms=[...new Set(ms.concat(md).concat(Object.keys(TGTM)))].sort();
     if(!ms.length){bar.innerHTML='<span class="slabel">měsíc</span>'+
-      '<span style="font-size:13px;color:var(--muted)">zatím žádná denní data — nahraj je v záložce Data</span>';return}
+      '<span style="font-size:13px;color:var(--muted)">zatím žádná data — nahraj denní report nebo zadej target v Nastavení</span>';return}
     if(!curMonth||!ms.includes(curMonth))curMonth=ms[ms.length-1];
     bar.innerHTML='<span class="slabel">měsíc</span>'+ms.map(m=>{
       const y=m.slice(0,4),mm=+m.slice(5,7);
