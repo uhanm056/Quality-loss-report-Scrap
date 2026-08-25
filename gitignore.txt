@@ -1,0 +1,17 @@
+# QAD exporty a reporty — obsahují detailní firemní data
+scrap_QAD_*.xlsx
+Quality_loss_report*.xlsx
+*_scrap_report*.xlsx
+
+# zálohy dat z aplikace
+scrap_zaloha_*.json
+
+# dočasné soubory
+~$*
+*.tmp
+*.bak
+
+# systémové
+.DS_Store
+Thumbs.db
+desktop.ini
