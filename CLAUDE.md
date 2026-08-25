@@ -1,7 +1,12 @@
 # Quality Loss Report / Scrap — Yanfeng Plant 1032
 
-Aplikace pro sledování scrapu a Quality Loss Rate. Jeden samostatný HTML soubor
-(`index.html`), který se otevírá lokálně v prohlížeči. Bez buildu, bez serveru.
+Aplikace pro sledování scrapu a Quality Loss Rate. Otevírá se lokálně v prohlížeči
+poklepáním na `index.html`. Bez buildu, bez serveru, bez instalace.
+
+Kód je rozdělený do souborů (`css/`, `js/`), které `index.html` načítá jako
+**klasické `<script>` tagy — ne ES moduly**. Moduly by přes `file://` neprošly
+CORS a aplikace by se neotevřela z disku. Proto se skripty spoléhají na společný
+globální scope a **na pořadí načtení v `index.html`**.
 
 ---
 
@@ -14,6 +19,7 @@ Aplikace pro sledování scrapu a Quality Loss Rate. Jeden samostatný HTML soub
 | **with tests** | Vše včetně testů, nájezdů a **zákaznických reklamací**. Z toho se počítá vykazovaný QLR %. Přichází až po uzávěrce měsíce. |
 | **Saving EUR** | (Target % − Scrap w/o tests %) × Sales |
 | **CI task** | Přísnější cíl včetně Continuous Improvement úkolů. Sloupec „Target includes additional CI task". |
+| **Rework** | Oprava vadného dílu místo jeho vyhození. Sleduje se v hodinách i EUR, ale **do QLR % se nezapočítává** — je vedle scrapu. |
 | **QAD** | ERP, ze kterého chodí měsíční scrap exporty |
 | **TL** | Team Leader — hlavní uživatel denního přehledu |
 
@@ -105,6 +111,12 @@ Lokace se klíčují **kódem**, ne popisem.
 **Neuzavřený měsíc nemá with tests.** Nepočítat pro něj rolling 12M —
 zkreslil by trend. Sledováno v objektu `PART`.
 
+**Plugin datalabels nemá v kontextu `c.raw`.** Dostane jen
+`{active, chart, dataIndex, dataset, datasetIndex}` — `c.raw` má tooltip, ne datalabels.
+Podmínka `display: c => c.raw != null` je proto vždy nepravdivá a čísla ve sloupcích
+zmizí. Hodnota se bere přes `dlVal(c)` z `js/core/utils.js`. Popisky nad sloupcem
+(`anchor:'end'`) navíc nesmí být bílé — sedí na bílém pozadí, ne v grafu.
+
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
 
@@ -112,7 +124,7 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
 
 ## Struktura aplikace
 
-`index.html` — jeden soubor, pět záložek:
+Šest záložek:
 
 1. **QLR měsíčně** — rolling 12M, year over year, scrap EUR. Historie 2024–2026
    je zapsaná přímo v kódu (pole `LBL`, `QW`, `QO`, `QT`, `EO`, `EW`, `SV`).
@@ -121,9 +133,51 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
    při jejich absenci padá zpět na měsíční `MDET`.
 4. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
 5. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
+6. **Rework** — z reportů o reworku, hodiny i EUR, rozpad podle projektů,
+   pracovišť, příčin a dílů. Vlastní import.
+7. **Nastavení** — cíl v EUR, pracovní dny, cíl a sazba reworku, měsíční
+   a projektové targety.
 
-Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`).
-Targety v `yf_tgtm` a `yf_ptgtm`.
+### Soubory
+
+| Soubor | Co v něm je |
+|---|---|
+| `index.html` | jen HTML kostra záložek + seznam skriptů v pořadí načtení |
+| `css/styles.css` | všechny styly, Yanfeng paleta |
+| `js/data/qlr-history.js` | měsíční historie — `LBL`, `QW`, `QO`, `QT`, `EO`, `EW`, `SV`, `MONTHLY`, `YRSUM`, `TOPPARTS25/26` |
+| `js/data/monthly-detail.js` | `MDET` — měsíční rozpad podle projektů |
+| `js/data/targets.js` | `TGTM`, `PTGTM`, `PSAL`, `AUG` + `mKey`/`mTgt`/`mSales`/`pTgt`/`pSales` |
+| `js/data/locations.js` | `LOCNAMES` — názvy pracovišť |
+| `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
+| `js/core/storage.js` | `localStorage` — načtení a ukládání |
+| `js/core/aggregate.js` | součty a rozpady denních dat |
+| `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
+| `js/core/nav.js` | přepínání záložek, horní lišta |
+| `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
+| `js/views/top.js` | záložka 0 — TOP kontributoři a jejich rozpad |
+| `js/views/dash.js` | záložka 1 — denní přehled |
+| `js/views/project.js` | záložka 2 — detail projektu |
+| `js/views/data.js` | záložka 3 — seznam dnů, záloha, obnova |
+| `js/views/source.js` | záložka 4 — zdrojová data |
+| `js/views/rework.js` | záložka 5 — rework |
+| `js/views/targets.js` | záložka 6 — targety a Sales |
+| `js/import/parser.js` | čtení denních `.xlsx` reportů |
+| `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
+| `js/main.js` | start aplikace |
+
+**Pořadí skriptů v `index.html` je závazné:** data → jádro → záložky → import →
+start. `js/main.js` musí zůstat poslední — spouští první vykreslení. Nové soubory
+zařazovat podle toho, co používají při načtení, ne až při volání funkce.
+
+Funkce volané z HTML atributů (`onclick`, `onchange`) se přiřazují jako
+`window.nazev = ...`, aby zůstaly dostupné bez ohledu na to, ve kterém souboru jsou.
+
+Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`),
+rework v `yf_rework_daily_v1`. Targety v `yf_tgtm` a `yf_ptgtm`, nastavení
+v `yf_scrap_set_v1`. Záloha v záložce Data & import bere scrap i rework.
+
+Chart.js, plugin datalabels a SheetJS se stahují z CDN — bez internetu se
+aplikace otevře, ale grafy a import nefungují.
 
 Klíčové datové struktury:
 
@@ -131,6 +185,19 @@ Klíčové datové struktury:
 - `TGTM` — měsíc → `{t, ci, sales, part}`
 - `PTGTM` — měsíc → projekt → `[target, targetCI]`
 - `PSAL` — měsíc → projekt → Sales
+- `RW` — den → `{eur, hrs, qty, calc, src, p:{projekt:{e,h,q, l{}, r{}, it{}}}}`
+
+### Rework
+
+Sleduje se **vedle scrapu, ne v QLR** — historie QLR zůstává ověřená proti scrap reportu.
+Parser hledá sloupce podle názvu stejně jako u scrapu (seznam názvů je v `RWCOL`),
+povinné je datum a k tomu hodiny nebo EUR. Řádky s `Excluded? = YES` se přeskakují;
+filtr na reason 20 se **nepoužívá** — kód 20 je dodavatelský scrap, na rework se nevztahuje.
+
+Když soubor nemá sloupec s částkou, EUR se dopočítá ze sazby v Nastavení
+(`SET.rwRate`) a den se označí `calc:true` — v UI se to napíše do výstražného pruhu.
+Cíl reworku (`SET.rwTarget`) je nepovinný; když je nula, neukazuje se tempo ani
+prognóza proti cíli, jen skutečnost.
 
 ---
 
@@ -156,7 +223,7 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 
 ## Co je potřeba udělat
 
-- [ ] Rozdělit `index.html` — 126 KB v jednom souboru se špatně upravuje
+- [x] Rozdělit `index.html` — hotovo, kód je v `css/` a `js/`
 - [ ] Skript, který z QAD exportu vygeneruje datové bloky místo ručního přepisování
 - [ ] Doplnit srpnový QAD export → rozpad pracovišť za srpen
 - [ ] Ověřit červnovou tabulku, která nesedí s QAD (G463 M 6 269 € vs 51 538 €)
