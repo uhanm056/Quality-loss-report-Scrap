@@ -135,7 +135,8 @@ Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
    pracovišť, příčin a dílů. Vlastní import.
 4. **Detail projektu** — pracoviště, reason kódy, kombinace. Bere denní data,
    při jejich absenci padá zpět na měsíční `MDET`.
-5. **Trend vad** — Pareto vad a jejich vývoj po měsících pro problem solving.
+5. **Trend vad** — Pareto vad a jejich vývoj po měsících nebo týdnech
+   pro problem solving.
 6. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
 7. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
 8. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
@@ -160,7 +161,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
 | `js/core/daily.js` | rozpad jednoho dne, porovnání dnů, přepínač EUR / € na kus |
-| `js/core/defects.js` | trend vad přes měsíce — Pareto, zařazení trendu |
+| `js/core/defects.js` | trend vad po měsících i týdnech — Pareto, ISO týdny, zařazení trendu |
 | `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ, `pace()` |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
@@ -255,13 +256,29 @@ sám se sebou a výkyv by se schoval. `movAvg()` do grafu aktuální den zahrnuj
 
 ### Trend vad
 
-Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Zdrojem je měsíční
-QAD export: `MDET[měsíc][projekt].R` drží vady, `.P` kombinaci pracoviště × vada.
-Metrika je **w/o tests** — kód 20 má ve `wo` nulu, takže dodavatel vypadne sám.
+Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Metrika je
+**w/o tests**. Dvě granularity, každá z jiného zdroje — přepínač `dGran`:
+
+| | zdroj | pokrytí |
+|---|---|---|
+| **měsíce** | měsíční QAD export — `MDET.R` vady, `MDET.P` kombinace pracoviště × vada | celý rok, i bez denních reportů |
+| **týdny** | denní reporty — `DB[den].p[projekt].r` a `.lr` | jen nahrané dny |
+
+Týden je kalendářní podle **ISO 8601** (pondělí–neděle), `isoWeek()`. Měsíc je
+na problem solving pozdě, týden dá signál o tři týdny dřív.
+
+V týdenním režimu se pracoviště k vadě přiřazuje **přesně přes `lr`** (klíč
+`lokace¶kód§popis`), zatímco měsíční `P` se klíčuje jen popisem vady — týdenní
+rozpad na pracoviště je proto přesnější.
 
 `rsnMonths()` vrací jen měsíce, které rozpad na vady **opravdu mají**. Srpen má
 zatím jen projektové součty (z `AUG`), takže se do trendu nepočítá — jinak by
 každá vada vypadala jako vyřešená. V UI je na to výstražný pruh.
+
+**Nedokončené období do trendu nevstupuje.** Týden, ke kterému nejsou nahrané
+dny až do neděle, má `part:true` — v grafu je (dutým bodem) a v tabulce se
+štítkem, ale `rsnTrend()` ho vyfiltruje. Bez toho by useknutý týden vypadal
+jako zlepšení.
 
 Zařazení trendu porovnává poslední třetinu měsíců s tou předchozí:
 
