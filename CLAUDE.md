@@ -158,6 +158,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
+| `js/core/daily.js` | rozpad jednoho dne, porovnání dnů, přepínač EUR / € na kus |
 | `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ, `pace()` |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
@@ -225,6 +226,25 @@ do Nastavení doplní skutečné Sales, počítá se všechno znovu z reálných
 
 Kumulativ 2026 sečte měsíční cíle a skutečnosti. Rezerva se může o pár set EUR
 lišit od `SV` (saving ze scrap reportu) — `SV` se počítá až po uzávěrce.
+
+### Den po dni
+
+Počítá `js/core/daily.js`, ukazuje záložka **Přehled scrapu**.
+
+Tři místa, kde je vidět, jestli se den zlepšil nebo zhoršil:
+
+1. **Karta posledního dne** — hodnota, změna proti průměru předchozích 7 dnů
+   a TOP 3 vady s projektem, na kterém vznikly.
+2. **Křivka průměru 7 dnů** v denním grafu — vyhladí výkyvy.
+3. **Tabulka den po dni** — změna proti předchozímu dni i proti průměru,
+   hlavní vada a projekt; rozbalení ukáže vady, projekty a pracoviště dne.
+
+Porovnává se v EUR, přepínačem i v **EUR na kus** (`dayU`) — ten očistí vliv
+objemu výroby. Řádek dne, který je o čtvrtinu horší než průměr předchozích
+dnů, se obarví. Jména projektů jsou proklik do Detailu projektu.
+
+`prevAvg()` počítá průměr **bez aktuálního dne** — jinak by se den porovnával
+sám se sebou a výkyv by se schoval. `movAvg()` do grafu aktuální den zahrnuje.
 
 ### Rework
 
