@@ -178,6 +178,12 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
 | `js/main.js` | start aplikace |
 
+**Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
+prohlížeč nechá starý soubor: když se změní jen něco v `js/`, `index.html`
+zůstane stejný a nová verze se vůbec nestáhne. **Při každé změně v `css/`
+nebo `js/` proto zvedni `?v=` u všech odkazů** — jinak uživatel uvidí starou
+aplikaci a bude si myslet, že se nic nestalo.
+
 **Pořadí skriptů v `index.html` je závazné:** data → jádro → záložky → import →
 start. `js/main.js` musí zůstat poslední — spouští první vykreslení. Nové soubory
 zařazovat podle toho, co používají při načtení, ne až při volání funkce.
