@@ -8,7 +8,7 @@ window.go=(i,b)=>{curTab=i;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
   renderBar();
   if(i===0)renderQ();if(i===1)renderDash();if(i===2)renderRework();if(i===3)renderProj();
-  if(i===4)renderDays();if(i===5)renderSrc();if(i===6)renderTgt()};
+  if(i===4)renderDefects();if(i===5)renderDays();if(i===6)renderSrc();if(i===7)renderTgt()};
 window.setQSub=i=>{qSub=i;
   document.querySelectorAll('#v0 .sub').forEach((s,j)=>s.classList.toggle('on',j===i));
   renderBar();renderQ()};

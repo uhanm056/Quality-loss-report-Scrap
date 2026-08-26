@@ -135,9 +135,10 @@ Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
    pracovišť, příčin a dílů. Vlastní import.
 4. **Detail projektu** — pracoviště, reason kódy, kombinace. Bere denní data,
    při jejich absenci padá zpět na měsíční `MDET`.
-5. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
-6. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
-7. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
+5. **Trend vad** — Pareto vad a jejich vývoj po měsících pro problem solving.
+6. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
+7. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
+8. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
    Cíl scrapu se tu **nezadává** — počítá se jako target % × Sales.
 
 Záložky se přepínají podle **pořadí v DOM**, ne podle `id` — `go(i)` sahá na
@@ -159,6 +160,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
 | `js/core/daily.js` | rozpad jednoho dne, porovnání dnů, přepínač EUR / € na kus |
+| `js/core/defects.js` | trend vad přes měsíce — Pareto, zařazení trendu |
 | `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ, `pace()` |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
@@ -167,9 +169,10 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/views/dash.js` | záložka 1 — přehled scrapu, měsíční výsledek a denní tempo |
 | `js/views/rework.js` | záložka 2 — přehled reworku |
 | `js/views/project.js` | záložka 3 — detail projektu |
-| `js/views/data.js` | záložka 4 — seznam dnů, záloha, obnova |
-| `js/views/source.js` | záložka 5 — zdrojová data |
-| `js/views/targets.js` | záložka 6 — targety a Sales |
+| `js/views/defects.js` | záložka 4 — trend vad |
+| `js/views/data.js` | záložka 5 — seznam dnů, záloha, obnova |
+| `js/views/source.js` | záložka 6 — zdrojová data |
+| `js/views/targets.js` | záložka 7 — targety a Sales |
 | `js/import/parser.js` | čtení denních `.xlsx` reportů |
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
 | `js/main.js` | start aplikace |
@@ -249,6 +252,32 @@ dnů, se obarví. Jména projektů jsou proklik do Detailu projektu.
 
 `prevAvg()` počítá průměr **bez aktuálního dne** — jinak by se den porovnával
 sám se sebou a výkyv by se schoval. `movAvg()` do grafu aktuální den zahrnuje.
+
+### Trend vad
+
+Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Zdrojem je měsíční
+QAD export: `MDET[měsíc][projekt].R` drží vady, `.P` kombinaci pracoviště × vada.
+Metrika je **w/o tests** — kód 20 má ve `wo` nulu, takže dodavatel vypadne sám.
+
+`rsnMonths()` vrací jen měsíce, které rozpad na vady **opravdu mají**. Srpen má
+zatím jen projektové součty (z `AUG`), takže se do trendu nepočítá — jinak by
+každá vada vypadala jako vyřešená. V UI je na to výstražný pruh.
+
+Zařazení trendu porovnává poslední třetinu měsíců s tou předchozí:
+
+```
+k = floor(počet měsíců / 3)
+b = součet za posledních k měsíců
+a = součet za k měsíců před nimi
+nad +25 % roste · pod −25 % klesá · mezi tím stabilní
+a == 0 → nová · b == 0 → vyřešená
+```
+
+Pracoviště se k vadě přiřazuje přes `P`, kde se klíčuje **popisem vady, ne kódem**
+— součet za pracoviště proto nemusí přesně sedět s EUR vady. V UI je to napsané.
+
+Na reálných datech 2026 to sedí: Škrábance klesly z 20 085 € (únor) na 0 (červenec),
+Špatný prefix od dubna roste z 3 843 € na 11 955 €.
 
 ### Rework
 
