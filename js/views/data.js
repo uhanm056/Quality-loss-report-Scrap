@@ -31,8 +31,6 @@ window.restore=inp=>{const f=inp.files[0];if(!f)return;const r=new FileReader();
     toast('✓ Obnoveno '+Object.keys(DB).length+' dnů scrapu'+
       (j.rw?' a '+Object.keys(RW).length+' dnů reworku':'')+'.','#27AE60')}
   catch(err){toast('Chyba: '+err.message,'#C0392B')}inp.value=''};r.readAsText(f)};
-window.saveSet=()=>{SET.target=+document.getElementById('sTgt').value||95000;
-  SET.workdays=+document.getElementById('sDays').value||21;
-  SET.rwTarget=+document.getElementById('sRwTgt').value||0;
+window.saveSet=()=>{SET.rwTarget=+document.getElementById('sRwTgt').value||0;
   SET.rwRate=+document.getElementById('sRwRate').value||0;
   saveS();renderDash();renderRework();toast('✓ Nastavení uloženo.','#27AE60')};

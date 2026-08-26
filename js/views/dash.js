@@ -107,31 +107,43 @@ function dashDaily(m,R){
     'a rozpad na projekty se doplní, jakmile nahrajete denní reporty v záložce '+
     '<b>Data &amp; import</b>.</div></div></div>';
   const n=ks.length,tot=sumM(m),qty=qtyM(m),per=tot/n;
-  const wd=SET.workdays||21,fc=per*wd;
-  const cil=R.cil,allow=cil!=null?cil/wd*n:null;
+  const P=pace(ks,m),fc=P.ok?tot/P.share:null;
+  const cil=R.cil,allow=cil!=null&&P.ok?cil*P.share:null;
+  const limit=cil!=null&&P.ok?cil/P.exp:null;
   const last=DB[ks[n-1]],prev=n>1?DB[ks[n-2]]:null,dL=prev?last.eur-prev.eur:0;
   const dw=n===1?'den':(n<5?'dny':'dnů');
+  const kdy=P.done?'měsíc je kompletní · '+P.dim+' dnů':
+    'k '+P.last+'. dni z '+P.dim+' · měsíc z '+Math.round(P.share*100)+' %';
+  const rid=P.ok?'':'<div class="warnbox"><span style="font-size:26px">🕳️</span><div>'+
+    '<b>Nahrané dny nepokrývají celý měsíc.</b> Máte '+P.n+' '+dw+' k '+P.last+'. dni, '+
+    'takže chybějící dny nejsou nuly — prognózu ani povolené tempo z toho nepočítám. '+
+    'Doplňte zbylé denní reporty v záložce <b>Data &amp; import</b>.</div></div>';
   const nd=daysNoDetail(m);
   const warn=nd.length?'<div class="warnbox"><span style="font-size:26px">⚠️</span><div><b>'+
     nd.length+' '+(nd.length===1?'den nemá':'dnů nemá')+' uložený detail.</b> Byly načtené starší verzí. '+
     'Přetáhněte je znovu v záložce Data — rozpad na pracoviště a příčiny se doplní.<br>'+
     '<span style="font-size:12px;opacity:.85">'+nd.map(k=>k.split('-').reverse().join('.')).join(', ')+
     '</span></div></div>':'';
-  return warn+
+  return warn+rid+
   '<div class="grid4">'+
-  '<div class="kpi '+(cil!=null&&last.eur>cil/wd?'r':'g')+'"><div class="kpi-l">Poslední den · '+
+  '<div class="kpi '+(limit!=null&&last.eur>limit?'r':'g')+'"><div class="kpi-l">Poslední den · '+
     ks[n-1].split('-').reverse().join('.')+'</div><div class="kpi-v">'+fE(last.eur)+'</div>'+
     '<div class="kpi-s">'+(prev?'<span class="tag '+(dL>0?'r':'g')+'">'+(dL>0?'▲':'▼')+' '+fE(Math.abs(dL))+
     '</span> proti předchozímu':'první den')+'</div></div>'+
-  '<div class="kpi '+(allow!=null&&tot>allow?'r':'g')+'"><div class="kpi-l">Kumulace vs povolené tempo</div>'+
+  '<div class="kpi '+(allow!=null&&tot>allow?'r':'g')+'"><div class="kpi-l">'+
+    (allow!=null?'Kumulace vs povolené tempo':'Kumulace za nahrané dny')+'</div>'+
     '<div class="kpi-v">'+(allow!=null?(tot>allow?'+':'')+fE(tot-allow):fE(tot))+'</div>'+
-    '<div class="kpi-s">'+(allow!=null?'povoleno k dnešku '+fE(allow):'bez cíle v EUR')+'</div></div>'+
-  '<div class="kpi b"><div class="kpi-l">Průměr na den</div><div class="kpi-v">'+fE(per)+'</div>'+
-    '<div class="kpi-s">'+(cil!=null?'denní limit '+fE(cil/wd):n+' '+dw+' · '+fN(qty)+' ks')+'</div></div>'+
-  '<div class="kpi '+(cil!=null&&fc>cil?'r':'b')+'"><div class="kpi-l">Prognóza z denního tempa</div>'+
-    '<div class="kpi-v">'+fk(fc)+'</div><div class="kpi-s">'+n+' '+dw+' z '+wd+
-    (cil!=null&&!R.partial?' · cíl '+fk(cil):'')+'</div></div></div>'+
-  (R.partial&&cil!=null?'<div class="warnbox"><span style="font-size:26px">📐</span><div>'+
+    '<div class="kpi-s">'+(allow!=null?'povoleno k dnešku '+fE(allow):
+      (cil==null?'bez cíle v EUR':'dny nepokrývají celý měsíc'))+'</div></div>'+
+  '<div class="kpi b"><div class="kpi-l">Průměr na den s výrobou</div><div class="kpi-v">'+fE(per)+'</div>'+
+    '<div class="kpi-s">'+n+' '+dw+' s daty'+(limit!=null?' · limit '+fE(limit)+' / den':'')+
+    ' · '+fN(qty)+' ks</div></div>'+
+  '<div class="kpi '+(cil!=null&&!R.partial&&fc!=null&&fc>cil?'r':'b')+'">'+
+    '<div class="kpi-l">'+(P.done?'Skutečnost za měsíc':'Prognóza konce měsíce')+'</div>'+
+    '<div class="kpi-v">'+(fc!=null?fk(fc):'—')+'</div><div class="kpi-s">'+
+    (fc!=null?kdy+(cil!=null&&!R.partial?' · cíl '+fk(cil):''):
+      'chybí dny — '+P.n+' '+dw+' k '+P.last+'. dni z '+P.dim)+'</div></div></div>'+
+  (R.partial&&cil!=null&&fc!=null?'<div class="warnbox"><span style="font-size:26px">📐</span><div>'+
     '<b>Prognózu z denního tempa neporovnávám s cílem v EUR.</b> Cíl '+fE(cil)+
     ' platí ke Sales '+fE(R.sales)+', což je snímek k probíhajícímu měsíci — '+
     'prognóza je za celý měsíc. Držte se porovnání v % ze Sales nahoře.</div></div>':'')+
@@ -161,15 +173,15 @@ function renderDash(){
   box.innerHTML=dashMonth(R)+dashYear(m)+dashDaily(m,R);
 
   const ks=daysOf(m);if(!ks.length)return;
-  const wd=SET.workdays||21,cil=R.cil;
+  const P=pace(ks,m),cil=R.cil,limit=cil!=null&&P.ok?cil/P.exp:null;
   let run=0;const cum=ks.map(k=>run+=DB[k].eur);
   const ds=[
     {type:'bar',label:'Den',data:ks.map(k=>DB[k].eur),
-     backgroundColor:ks.map(k=>cil!=null&&DB[k].eur>cil/wd?'#E59A94':'#9CC5E8'),
+     backgroundColor:ks.map(k=>limit!=null&&DB[k].eur>limit?'#E59A94':'#9CC5E8'),
      borderRadius:5,maxBarThickness:60,yAxisID:'y',order:3},
     {type:'line',label:'Kumulace',data:cum,borderColor:'#E8A020',backgroundColor:'rgba(232,160,32,.10)',
      fill:true,borderWidth:3,pointRadius:3,tension:.25,yAxisID:'y1',order:1}];
-  if(cil!=null)ds.push({type:'line',label:'Povolené tempo',data:ks.map((_,i)=>cil/wd*(i+1)),
+  if(limit!=null)ds.push({type:'line',label:'Povolené tempo',data:ks.map((_,i)=>limit*(i+1)),
     borderColor:'#C0392B',borderWidth:2,borderDash:[6,4],pointRadius:0,yAxisID:'y1',order:2});
   mk('cDay',{data:{labels:ks.map(k=>k.slice(8)+'.'+k.slice(5,7)+'.'),datasets:ds},
    options:{responsive:true,maintainAspectRatio:false,

@@ -137,8 +137,8 @@ Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
    při jejich absenci padá zpět na měsíční `MDET`.
 5. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
 6. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
-7. **Nastavení** — cíl v EUR, pracovní dny, cíl a sazba reworku, měsíční
-   a projektové targety.
+7. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
+   Cíl scrapu se tu **nezadává** — počítá se jako target % × Sales.
 
 Záložky se přepínají podle **pořadí v DOM**, ne podle `id` — `go(i)` sahá na
 `querySelectorAll('.view')[i]`. Když se dlaždice přeskládají, musí se spolu s nimi
@@ -158,7 +158,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
-| `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ |
+| `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ, `pace()` |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
 | `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
@@ -237,6 +237,32 @@ Když soubor nemá sloupec s částkou, EUR se dopočítá ze sazby v Nastavení
 (`SET.rwRate`) a den se označí `calc:true` — v UI se to napíše do výstražného pruhu.
 Cíl reworku (`SET.rwTarget`) je nepovinný; když je nula, neukazuje se tempo ani
 prognóza proti cíli, jen skutečnost.
+
+Ověřeno na reálném souboru `Rework_Master_IMM_2026.xlsx`: list `Rework`, hlavička
+až na třetím řádku, sloupce `Datum`, `Projekt`, `Díl`, `Ks`, `Operátorů`,
+`Doba (h)`, `Náklad (€)`, `Důvod`. Pracoviště v něm není a `Důvod` je prázdný —
+prázdné sloupce se nezapisují a příslušné panely se neukazují.
+
+**EUR i hodiny se ukládají na tři desetinná místa.** Sčítá se po dnech, takže
+hrubší zaokrouhlení rozhodí měsíční součet: duben vychází 9418,502 € a při
+zaokrouhlení na celé EUR po dnech spadl na 9418 místo 9419.
+
+### Tempo a prognóza — počítá se z kalendáře
+
+`pace()` v `js/core/month.js`. Počet nahraných dnů se na to použít **nedá** —
+závod nejede každý den stejně a dnů s reportem bývá víc než plánovaných
+pracovních dnů (červenec má 29 dnů s daty). Dřív z toho vycházelo „29 dnů z 21".
+
+```
+share = poslední den s daty / počet dnů v měsíci
+fc    = skutečnost / share            (prognóza konce měsíce)
+allow = cíl v EUR × share             (povoleno k dnešku)
+exp   = odhad počtu dnů s výrobou za celý měsíc
+```
+
+Měsíc je uzavřený, když má data do posledního dne **nebo** už podle kalendáře
+skončil. `cover` hlídá, jestli reporty pokrývají uplynulou část měsíce; pod 50 %
+se prognóza ani povolené tempo nepočítají — chybějící dny nejsou nuly.
 
 ---
 

@@ -102,7 +102,7 @@
     <div class="s">nebo klikni a vyber · .xlsx / .xls · můžeš i více souborů najednou</div>
     <input type="file" id="rwFile" accept=".xlsx,.xls" multiple style="display:none">
   </div>
-  <div class="panel"><div class="ph"><span>Načtené reporty o reworku</span>
+  <div class="panel"><div class="ph"><span id="rwDaysTitle">Načtené dny</span>
     <button class="btn gh" onclick="wipeRw()">🗑 Vymazat rework</button></div>
     <div class="pb" id="rwDays"></div></div>
 </div>
@@ -157,10 +157,11 @@
 <div class="view" id="v6">
   <div class="panel"><div class="ph"><span>Nastavení</span></div>
     <div class="pb">
-      <div class="setrow"><label>Měsíční cíl scrapu závodu (EUR)</label>
-        <input class="inp" type="number" id="sTgt" onchange="saveSet()"></div>
-      <div class="setrow"><label>Počet pracovních dnů v měsíci</label>
-        <input class="inp" type="number" id="sDays" onchange="saveSet()"></div>
+      <div class="warnbox" style="margin-bottom:14px"><span style="font-size:26px">🎯</span><div>
+        <b>Cíl scrapu se nezadává tady.</b> Mění se každý měsíc a počítá se jako
+        <b>target % × Sales</b> z tabulky <b>Měsíční targety a Sales</b> níž na této stránce.
+        Tempo a prognózu bere aplikace z kalendáře — z toho, ke kterému dni v měsíci
+        má data.</div></div>
       <div class="setrow"><label>Měsíční cíl reworku (EUR)</label>
         <input class="inp" type="number" id="sRwTgt" onchange="saveSet()">
         <span style="font-size:12px;color:var(--muted)">0 = bez cíle, ukazuje se jen skutečnost</span></div>
@@ -169,7 +170,7 @@
         <span style="font-size:12px;color:var(--muted)">použije se, jen když report nemá sloupec s částkou</span></div>
       <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:14px;
       padding-top:14px;border-top:1px solid var(--border)">
-      <b>QLR měsíčně</b> pracuje s historií leden 2024 – květen 2026, která je součástí aplikace.<br>
+      <b>QLR měsíčně</b> pracuje s historií leden 2024 – červenec 2026, která je součástí aplikace.<br>
       <b>Denní přehled</b> a <b>Detail projektu</b> se plní z denních reportů, které nahrajete
       v záložce <b>Data &amp; import</b>. Ukládají se do paměti prohlížeče na tomto počítači —
       zálohu si stáhněte tamtéž.</div></div></div>
