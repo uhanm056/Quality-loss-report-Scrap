@@ -22,9 +22,10 @@
   <button class="tab" onclick="go(1,this)">🏭 Přehled scrapu</button>
   <button class="tab" onclick="go(2,this)">🔧 Přehled reworku</button>
   <button class="tab" onclick="go(3,this)">🔍 Detail projektu</button>
-  <button class="tab" onclick="go(4,this)">📥 Data &amp; import</button>
-  <button class="tab" onclick="go(5,this)">📋 Zdrojová data</button>
-  <button class="tab" onclick="go(6,this)">⚙️ Nastavení</button>
+  <button class="tab" onclick="go(4,this)">🔬 Trend vad</button>
+  <button class="tab" onclick="go(5,this)">📥 Data &amp; import</button>
+  <button class="tab" onclick="go(6,this)">📋 Zdrojová data</button>
+  <button class="tab" onclick="go(7,this)">⚙️ Nastavení</button>
 </div>
 
 <div class="sbar" id="sbar"></div>
@@ -110,8 +111,11 @@
 <!-- ══════════ 3 · DETAIL PROJEKTU ══════════ -->
 <div class="view" id="v3"><div id="projBody"></div></div>
 
-<!-- ══════════ 4 · DATA & IMPORT ══════════ -->
-<div class="view" id="v4">
+<!-- ══════════ 4 · TREND VAD ══════════ -->
+<div class="view" id="v4"><div id="defBody"></div></div>
+
+<!-- ══════════ 5 · DATA & IMPORT ══════════ -->
+<div class="view" id="v5">
   <div class="drop" id="dropZone">
     <div class="ic">📥</div>
     <div class="t">Přetáhni sem denní scrap report</div>
@@ -127,8 +131,8 @@
     <div class="pb" id="daysBody"></div></div>
 </div>
 
-<!-- ══════════ 5 · ZDROJOVÁ DATA ══════════ -->
-<div class="view" id="v5">
+<!-- ══════════ 6 · ZDROJOVÁ DATA ══════════ -->
+<div class="view" id="v6">
   <div class="panel"><div class="ph"><span>Jak se QLR počítá</span></div>
     <div class="pb" style="font-size:14px;line-height:1.9">
       <div style="background:var(--bg);border-radius:10px;padding:16px 20px;margin-bottom:14px">
@@ -153,8 +157,8 @@
     <div class="pb" style="overflow-x:auto;max-height:640px" id="srcBody"></div></div>
 </div>
 
-<!-- ══════════ 6 · NASTAVENÍ ══════════ -->
-<div class="view" id="v6">
+<!-- ══════════ 7 · NASTAVENÍ ══════════ -->
+<div class="view" id="v7">
   <div class="panel"><div class="ph"><span>Nastavení</span></div>
     <div class="pb">
       <div class="warnbox" style="margin-bottom:14px"><span style="font-size:26px">🎯</span><div>
@@ -206,6 +210,7 @@
 <script src="js/core/storage.js"></script>
 <script src="js/core/aggregate.js"></script>
 <script src="js/core/daily.js"></script>
+<script src="js/core/defects.js"></script>
 <script src="js/core/month.js"></script>
 <script src="js/core/rework.js"></script>
 <script src="js/core/nav.js"></script>
@@ -215,6 +220,7 @@
 <script src="js/views/top.js"></script>
 <script src="js/views/dash.js"></script>
 <script src="js/views/project.js"></script>
+<script src="js/views/defects.js"></script>
 <script src="js/views/data.js"></script>
 <script src="js/views/source.js"></script>
 <script src="js/views/targets.js"></script>
