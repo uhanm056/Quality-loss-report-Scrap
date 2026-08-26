@@ -233,11 +233,15 @@ Počítá `js/core/daily.js`, ukazuje záložka **Přehled scrapu**.
 
 Tři místa, kde je vidět, jestli se den zlepšil nebo zhoršil:
 
-1. **Karta posledního dne** — hodnota, změna proti průměru předchozích 7 dnů
-   a TOP 3 vady s projektem, na kterém vznikly.
+1. **Karta posledního dne** — vedle sebe poslední a předchozí den. U každého
+   hodnota, změna proti průměru předchozích 7 dnů a TOP 3 vady s projektem.
+   U posledního dne navíc změna každé vady proti předchozímu dni; `nová`
+   znamená, že předchozí den ta vada vůbec nebyla.
 2. **Křivka průměru 7 dnů** v denním grafu — vyhladí výkyvy.
 3. **Tabulka den po dni** — změna proti předchozímu dni i proti průměru,
    hlavní vada a projekt; rozbalení ukáže vady, projekty a pracoviště dne.
+
+V denním tempu je KPI **Nejhorší den měsíce** s datem a hlavní vadou toho dne.
 
 Porovnává se v EUR, přepínačem i v **EUR na kus** (`dayU`) — ten očistí vliv
 objemu výroby. Řádek dne, který je o čtvrtinu horší než průměr předchozích
