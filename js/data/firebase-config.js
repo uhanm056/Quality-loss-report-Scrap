@@ -3,17 +3,20 @@
    Dokud je `apiKey` prázdný, sdílení je vypnuté a aplikace se chová přesně
    jako dřív — data zůstávají jen v prohlížeči na tomhle počítači.
 
-   Jak to zapnout je krok za krokem popsané v souboru FIREBASE.md.
-   Chybějící hodnoty jsou ve Firebase konzoli:
-     Project settings → Your apps → Web app → SDK setup and configuration.
+   Vyplněno pro projekt „Quality loss report" (webová aplikace QLR).
+   Postup a pravidla přístupu jsou v souboru FIREBASE.md. Hodnoty jsou
+   ve Firebase konzoli: Project settings → Your apps → SDK setup and configuration.
+
+   `apiKey` není heslo — u Firebase je normální, že je ve stránce vidět.
+   Kdo se dostane k datům, rozhodují Security Rules ve Firestore.
 
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
 
 const FBCFG={
-  apiKey:'',            /* DOPLNIT — Project settings → General → Web API Key */
+  apiKey:'AIzaSyDwCRQKW3YfwTl5c8APZkTEqL7-kxLJH74',
   authDomain:'quality-loss-report.firebaseapp.com',
   projectId:'quality-loss-report',
-  appId:'',             /* nepovinné — Auth i Firestore fungují i bez něj */
+  appId:'1:566629674743:web:79aacf147df46d5592edf2',
 
   /* jak se lidé přihlašují:
        'password' — e-mailem a heslem; účty zakládá správce v konzoli
