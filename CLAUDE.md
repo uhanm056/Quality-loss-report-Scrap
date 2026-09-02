@@ -299,6 +299,15 @@ a == 0 → nová · b == 0 → vyřešená
 Pracoviště se k vadě přiřazuje přes `P`, kde se klíčuje **popisem vady, ne kódem**
 — součet za pracoviště proto nemusí přesně sedět s EUR vady. V UI je to napsané.
 
+**Kód vady se v QAD zapisuje velkými i malými písmeny** — `PVZD` i `pvzd` je
+„Vzduch". Klíč vady (`kód§popis`) se proto před sčítáním protáhne přes `rsnKey()`
+z `js/core/utils.js`, u kombinací pracoviště × vada přes `lrKey()`. Sjednocuje se
+**jen kód, popis zůstává, jak přišel**. Bez toho byla jedna vada ve dvou řádcích:
+`PVZD` 7 739 € (únor) a `pvzd` 5 056 € (březen) místo jednoho Vzduchu za 12 795 €.
+Sloučením se **nemění celková částka** — 2026 dá 418 709 € před i po —, jen klesne
+počet řádků z 65 na 60. Sjednocuje se všude, kde se vady sčítají: `defects.js`,
+`aggregate.js`, `daily.js`, `rework.js` i měsíční větev v `views/project.js`.
+
 Na reálných datech 2026 to sedí: Škrábance klesly z 20 085 € (únor) na 0 (červenec),
 Špatný prefix od dubna roste z 3 843 € na 11 955 €.
 

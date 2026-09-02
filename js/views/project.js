@@ -78,8 +78,8 @@ function renderProj(){
   }else{
     const D=MDET[mm][curProj]||{L:[],R:[],P:[]};
     L=(D.L||[]).map(x=>[x[0],{e:x[2],q:x[3]}]).filter(x=>x[1].e>0);
-    R=(D.R||[]).map(x=>[x[0]+'§'+x[1],{e:x[3],q:x[4]}]).filter(x=>x[1].e>0);
-    P=(D.P||[]).map(x=>[x[0]+'¶§'+x[1],{e:x[3],q:x[4]}]).filter(x=>x[1].e>0);
+    R=mergeBy((D.R||[]).map(x=>[x[0]+'§'+x[1],{e:x[3],q:x[4]||0}]).filter(x=>x[1].e>0),rsnKey);
+    P=mergeBy((D.P||[]).map(x=>[x[0]+'¶§'+x[1],{e:x[3],q:x[4]||0}]).filter(x=>x[1].e>0));
   }
   const wL=L[0],wR=R[0];
   const pt=mm?pTgt(mm,curProj):null,ps=mm?pSales(mm,curProj):null;

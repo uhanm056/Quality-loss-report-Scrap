@@ -82,9 +82,9 @@ function rsnAll(proj){
     Object.keys(DB).sort().forEach(k=>{const per=isoWeek(k);
       Object.entries(DB[k].p||{}).forEach(([p,P])=>{if(!pick(p))return;
         Object.entries(P.r||{}).forEach(([key,v])=>{if(v.e<=0)return;
-          put(key,per,v.e,v.q||0,p)});
-        Object.entries(P.lr||{}).forEach(([lk,v])=>{if(v.e<=0)return;
-          const i=lk.indexOf('¶');if(i<0)return;
+          put(rsnKey(key),per,v.e,v.q||0,p)});
+        Object.entries(P.lr||{}).forEach(([lk0,v])=>{if(v.e<=0)return;
+          const lk=lrKey(lk0),i=lk.indexOf('¶');if(i<0)return;
           const loc=lk.slice(0,i),key=lk.slice(i+1);
           if(!o[key])return;o[key].loc[loc]=(o[key].loc[loc]||0)+v.e})})});
     return o}
@@ -93,7 +93,7 @@ function rsnAll(proj){
   rsnMonths().forEach(m=>Object.entries(MDET[String(m)]).forEach(([p,D])=>{
     if(!pick(p))return;
     (D.R||[]).forEach(r=>{const eur=r[3]||0;if(eur<=0)return;
-      put(r[0]+'§'+r[1],String(m),eur,r[4]||0,p)});
+      put(rsnKey(r[0]+'§'+r[1]),String(m),eur,r[4]||0,p)});
     /* kombinace v P se klíčují popisem vady, ne kódem — proto shoda přes popis */
     (D.P||[]).forEach(r=>{const eur=r[3]||0;if(eur<=0)return;
       Object.keys(o).forEach(key=>{if(key.split('§')[1]!==r[1])return;
