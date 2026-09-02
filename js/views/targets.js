@@ -46,6 +46,7 @@ function renderTgt(){
 window.setPT=(k,n,i,v)=>{PTGTM[k]=PTGTM[k]||{};PTGTM[k][n]=PTGTM[k][n]||[null,null];
   PTGTM[k][n][i]=v===''?null:+v;
   try{localStorage.setItem('yf_ptgtm',JSON.stringify(PTGTM))}catch(e){}
+  cloudCfg();
   if(qSub===0)renderTop();toast('✓ Uloženo.','#27AE60')};
 window.setTgt=(k,f,v)=>{TGTM[k]=TGTM[k]||{};
   TGTM[k][f]=v===''?null:(f==='sales'?Math.round(+v):+v);saveT();

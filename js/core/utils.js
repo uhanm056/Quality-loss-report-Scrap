@@ -15,6 +15,9 @@ const fN=v=>Math.round(v||0).toLocaleString('cs-CZ');
 const fEs=v=>Math.abs(v||0)<10?(v||0).toFixed(2).replace('.',',')+' €':fE(v);
 const f3=v=>v==null?'—':v.toFixed(3)+'%';
 const esc=s=>String(s).replace(/'/g,"\\'");
+/* escape do HTML — u textu, který přišel zvenku (e-mail, hláška z Firebase) */
+const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 /* Kód vady se v QAD zapisuje jednou velkými, jednou malými písmeny — PVZD
    i pvzd je „Vzduch". Pro sčítání se kód sjednotí na velká písmena, popis
    zůstane, jak přišel. Klíč vady je 'kód§popis', u kombinací 'pracoviště¶kód§popis'. */

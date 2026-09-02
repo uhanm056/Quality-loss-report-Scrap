@@ -122,6 +122,11 @@ font-weight:700;width:110px;font-family:inherit;text-align:right}
 .toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:10px;
 font-size:13px;font-weight:700;color:#fff;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.22);
 max-width:440px;line-height:1.5;display:none}
+.cbox{border-radius:12px;padding:14px 20px;display:flex;gap:14px;align-items:center;
+font-size:14px;line-height:1.6;border:2px solid}
+.cbox.n{background:var(--bg);border-color:var(--border);color:var(--text)}
+.cbox.g{background:#EAFAF1;border-color:#A9DFBF;color:#145A32}
+.cbox.r{background:#FDEDEC;border-color:#F5B7B1;color:#922B21}
 .warnbox{background:#FEF3CD;border:2px solid #F4D03F;border-radius:12px;padding:14px 20px;
 display:flex;gap:14px;align-items:center;font-size:14px;color:#7D6608;line-height:1.6}
 @media(max-width:1000px){.grid4{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
