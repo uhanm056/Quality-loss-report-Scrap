@@ -23,7 +23,7 @@
 const FBSDK='https://www.gstatic.com/firebasejs/10.12.5/';
 
 /* sts: 'off' nedostupné · 'out' odhlášen · 'on' přihlášen · 'err' chyba */
-const CLOUD={sts:'off',why:'',user:null,err:'',last:null,busy:false,
+const CLOUD={sts:'off',why:'',user:null,err:'',loginErr:'',last:null,busy:false,
   synced:{scrap:false,rework:false},rem:{scrap:{},rework:{}},applying:false};
 
 let fbAuth=null,fbDb=null,cloudSubs=[],bumpT=null;
@@ -69,18 +69,63 @@ function cloudErr(e){
   renderCloud();cloudBadge()}
 
 /* ── přihlášení ────────────────────────────────────────────────────────── */
+/* Účty zakládá správce v konzoli Firebase, sám se nikdo nezaregistruje.
+   Přihlášení e-mailem a heslem (`FBCFG.login`='password') nepotřebuje firemní
+   Google účet — proto je výchozí. */
+
+/* hlášky z Firebase jsou anglicky a technicky; tohle je přeloží */
+const AUTHMSG={
+  'auth/invalid-email':'E-mail není ve správném tvaru.',
+  'auth/invalid-credential':'Nesprávný e-mail nebo heslo.',
+  'auth/wrong-password':'Nesprávné heslo.',
+  'auth/user-not-found':'Takový účet neexistuje — účet zakládá správce.',
+  'auth/user-disabled':'Účet je zablokovaný.',
+  'auth/missing-password':'Vyplň heslo.',
+  'auth/too-many-requests':'Moc pokusů za sebou. Zkus to za chvíli znovu.',
+  'auth/network-request-failed':'Nepodařilo se spojit se serverem.',
+  'auth/operation-not-allowed':'Tenhle způsob přihlášení není ve Firebase zapnutý.',
+  'auth/unauthorized-domain':'Doména téhle stránky není ve Firebase povolená.'};
+const authMsg=e=>AUTHMSG[e&&e.code]||(e&&e.message)||String(e);
+
+/* e-mail se drží mimo panel, aby se po chybné hlášce nemusel psát znovu */
+let loginMail='';
+
+function loginFail(e){CLOUD.busy=false;CLOUD.loginErr=authMsg(e);renderCloud()}
+
+window.cloudLoginPwd=ev=>{
+  if(ev&&ev.preventDefault)ev.preventDefault();
+  if(!fbAuth)return false;
+  const m=(document.getElementById('cEmail')||{}).value||'';
+  const h=(document.getElementById('cPass')||{}).value||'';
+  loginMail=m.trim();
+  CLOUD.busy=true;CLOUD.loginErr='';renderCloud();
+  fbAuth.signInWithEmailAndPassword(loginMail,h)
+    .then(()=>{CLOUD.busy=false;CLOUD.loginErr='';toast('✓ Přihlášeno.','#27AE60')})
+    .catch(loginFail);
+  return false};
+
 window.cloudLogin=()=>{
   if(!fbAuth)return;
   const p=new firebase.auth.GoogleAuthProvider();
   if(FBCFG.domain)p.setCustomParameters({hd:FBCFG.domain});
-  CLOUD.busy=true;renderCloud();
+  CLOUD.busy=true;CLOUD.loginErr='';renderCloud();
   fbAuth.signInWithPopup(p)
     .then(()=>{CLOUD.busy=false;toast('✓ Přihlášeno.','#27AE60')})
     .catch(e=>{CLOUD.busy=false;
       if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')renderCloud();
-      else cloudErr(e)})};
+      else loginFail(e)})};
 
-window.cloudLogout=()=>{if(fbAuth)fbAuth.signOut()};
+/* heslo si uživatel přenastaví sám, správce ho nemusí posílat */
+window.cloudReset=()=>{
+  if(!fbAuth)return;
+  const m=((document.getElementById('cEmail')||{}).value||'').trim();
+  if(!m){CLOUD.loginErr='Nejdřív vyplň e-mail, na který se má odkaz poslat.';renderCloud();return}
+  loginMail=m;
+  fbAuth.sendPasswordResetEmail(m)
+    .then(()=>toast('✓ Odkaz na změnu hesla je na cestě do schránky '+m+'.','#27AE60'))
+    .catch(loginFail)};
+
+window.cloudLogout=()=>{if(fbAuth){loginMail='';CLOUD.loginErr='';fbAuth.signOut()}};
 
 /* ── odběr změn ────────────────────────────────────────────────────────── */
 function cloudDetach(){cloudSubs.forEach(f=>{try{f()}catch(e){}});cloudSubs=[];

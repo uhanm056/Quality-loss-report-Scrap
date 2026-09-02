@@ -36,11 +36,29 @@ function renderCloud(){
     return}
 
   if(CLOUD.sts==='out'){
-    b.innerHTML=box('n','🔒','<b>Sdílená data jsou zamčená.</b> Přihlaš se firemním '+
-      'Google účtem'+(FBCFG.domain?' (<b>@'+escH(FBCFG.domain)+'</b>)':'')+
-      ' a uvidíš dny, které nahráli ostatní.<br>'+jen)+
-      '<div style="margin-top:12px"><button class="btn" onclick="cloudLogin()">'+
-      '🔑 Přihlásit se Google účtem</button></div>';
+    const jak=FBCFG.login||'password';
+    let form='';
+    if(jak!=='google')
+      form+='<form onsubmit="return cloudLoginPwd(event)" style="display:flex;'+
+        'flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px">'+
+        '<input class="cinp" type="email" id="cEmail" autocomplete="username" '+
+        'placeholder="jmeno.prijmeni@'+escH(FBCFG.domain||'firma.com')+'" '+
+        'value="'+escH(loginMail)+'">'+
+        '<input class="cinp" type="password" id="cPass" autocomplete="current-password" '+
+        'placeholder="heslo" style="width:170px">'+
+        '<button class="btn" type="submit">🔑 Přihlásit se</button>'+
+        '<button class="btn" type="button" onclick="cloudReset()" '+
+        'style="border:0;background:none;color:var(--mid);font-weight:600">'+
+        'Zapomenuté heslo?</button></form>';
+    if(jak!=='password')
+      form+='<div style="margin-top:12px"><button class="btn" onclick="cloudLogin()">'+
+        '🔑 Přihlásit se Google účtem</button></div>';
+    b.innerHTML=box('n','🔒','<b>Sdílená data jsou zamčená.</b> Přihlaš se účtem, '+
+      'který ti založil správce'+(FBCFG.domain?' (<b>@'+escH(FBCFG.domain)+'</b>)':'')+
+      ', a uvidíš dny, které nahráli ostatní.<br>'+jen)+form+
+      (CLOUD.loginErr?'<div style="margin-top:10px;font-size:13px;font-weight:700;'+
+        'color:var(--red)">⚠ '+escH(CLOUD.loginErr)+'</div>':'');
+    const el=document.getElementById(loginMail?'cPass':'cEmail');if(el)el.focus();
     return}
 
   /* přihlášeno */

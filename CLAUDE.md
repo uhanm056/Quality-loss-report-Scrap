@@ -405,8 +405,16 @@ by se smazaný den při další synchronizaci vrátil. Volá se z `delDay`, `wip
 `delRwDay` a `wipeRw`.
 
 **Ochranu dělají Security Rules, ne `apiKey`.** Stránka je veřejná, takže klíč
-je v ní vidět — tak to u Firebase má být. Bez pravidel omezených na firemní
-doménu by data mohl číst i přepsat kdokoliv, kdo zná adresu.
+je v ní vidět — tak to u Firebase má být. Bez pravidel by data mohl číst
+i přepsat kdokoliv, kdo zná adresu.
+
+Přihlášení řídí `FBCFG.login`: `'password'` (e-mail a heslo, účty zakládá
+správce v konzoli), `'google'` nebo `'both'`. U hesel **nesmí být v pravidlech
+`email_verified == true`** — ručně založený účet ho má `false` a neprojde
+nikdo. Zato tam musí být výčet konkrétních e-mailů: `apiKey` je veřejný, takže
+při zapnutém sign-upu by si kdokoliv založil účet na vymyšlenou adresu z firemní
+domény. Proto se v konzoli vypíná **Authentication → Settings → Enable create
+(sign-up)**.
 
 ## Jak pracovat s tímhle projektem
 

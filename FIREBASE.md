@@ -42,16 +42,61 @@ prázdný, aplikace se chová přesně jako dosud.
 
 ## 3 · Zapnout přihlašování
 
-1. **Build → Authentication → Get started**
-2. Záložka **Sign-in method → Google → Enable**, uložit
-3. Záložka **Settings → Authorized domains → Add domain**
-   a přidat doménu, na které stránka běží — u GitHub Pages je to
-   `<uživatel>.github.io`
+**Build → Authentication → Get started**, pak **Sign-in method**. Na výběr jsou
+dvě cesty — v `js/data/firebase-config.js` se pak nastaví `login` podle toho,
+která se použila:
+
+| ve Firebase zapnout | `login` v konfiguraci | pro koho |
+|---|---|---|
+| **Email/Password** | `'password'` | nepotřebuje firemní Google účet; účty zakládá správce |
+| **Google** | `'google'` | jen když má firma Google Workspace |
+
+### Když je to Email/Password
+
+1. **Sign-in method → Email/Password → Enable** (druhý přepínač *Email link*
+   nechat vypnutý), uložit.
+2. Záložka **Users → Add user** — zadat e-mail a heslo pro každého člověka.
+   **Nikdo se nezaregistruje sám**, účty vznikají jen tady.
+3. **Settings → User actions** → vypnout **Enable create (sign-up)**.
+   Tím se zavře jediná díra: `apiKey` je ve veřejné stránce vidět, takže bez
+   tohohle by si kdokoliv mohl založit účet na vymyšlenou adresu z firemní
+   domény a projít pravidly z kroku 4.
+4. Heslo si každý může sám přenastavit odkazem **Zapomenuté heslo?** v aplikaci.
+
+### V obou případech
+
+**Settings → Authorized domains → Add domain** a přidat doménu, na které
+stránka běží — u GitHub Pages je to `<uživatel>.github.io`. Bez toho skončí
+přihlášení hláškou *auth/unauthorized-domain*.
 
 ## 4 · Pravidla přístupu
 
 **Firestore Database → Rules**, vložit a dát **Publish**.
-Místo `yfai.com` napsat skutečnou doménu firemních e-mailů:
+
+**U přihlašování e-mailem a heslem** se vyjmenují konkrétní lidé. Je to
+nejtěsnější varianta — účet na vymyšlenou adresu z firemní domény se k datům
+nedostane, i kdyby vznikl:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /plant1032/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email in [
+          'milan.hanus@yfai.com',
+          'roma.zubek@yfai.com',
+          'martin.slaby@yfai.com'
+        ];
+    }
+  }
+}
+```
+
+Přidat člověka = založit mu účet v kroku 3 **a doplnit řádek sem**.
+
+**U přihlašování Google účtem** stačí doména — vlastnictví schránky ověřuje
+Google sám:
 
 ```
 rules_version = '2';
@@ -66,16 +111,15 @@ service cloud.firestore {
 }
 ```
 
-Tohle je jediná skutečná ochrana dat. Stránka je veřejná, takže konfigurace
-níž (včetně `apiKey`) je v ní vidět — tak to u Firebase má být, `apiKey` není
-heslo. **Bez těchto pravidel by data mohl číst i přepsat kdokoliv, kdo zná
-adresu stránky.**
+> **Pozor na `email_verified` u hesel.** Účet založený ručně v konzoli má
+> `email_verified == false`. Když se tahle podmínka nechá u přihlašování
+> heslem, neprojde **nikdo** — všechno skončí na *Missing or insufficient
+> permissions*.
 
-Když se má dovnitř dostat víc domén, dá se podmínka rozšířit:
-
-```
-&& request.auth.token.email.matches('.*@(yfai[.]com|yanfeng[.]com)$')
-```
+Pravidla jsou jediná skutečná ochrana dat. Stránka je veřejná, takže
+konfigurace níž (včetně `apiKey`) je v ní vidět — tak to u Firebase má být,
+`apiKey` není heslo. **Bez pravidel by data mohl číst i přepsat kdokoliv, kdo
+zná adresu stránky.**
 
 ## 5 · Získat konfiguraci
 
@@ -88,15 +132,17 @@ Když se má dovnitř dostat víc domén, dá se podmínka rozšířit:
 ```js
 const FBCFG={
   apiKey:'AIzaSy…',
-  authDomain:'yf-scrap-1032.firebaseapp.com',
-  projectId:'yf-scrap-1032',
+  authDomain:'quality-loss-report.firebaseapp.com',
+  projectId:'quality-loss-report',
   appId:'1:123…:web:abc…',
+  login:'password',
   domain:'yfai.com',
   root:'plant1032'
 };
 ```
 
-`domain` je jen pro nabídku účtu při přihlášení a pro hlášku uživateli —
+`login` musí sedět s tím, co je zapnuté v kroku 3 (`'password'`, `'google'`
+nebo `'both'`). `domain` je jen do hlášky a do předvyplněného pole —
 skutečné omezení je v pravidlech z kroku 4.
 
 Po změně souboru **zvednout `?v=` u všech odkazů v `index.html`**
@@ -105,8 +151,8 @@ Po změně souboru **zvednout `?v=` u všech odkazů v `index.html`**
 ## 7 · Vyzkoušet
 
 Otevřít stránku → záložka **Data & import** → panel **Sdílení dat**
-→ **Přihlásit se Google účtem**. Po přihlášení je v hlavičce štítek
-`☁ sdíleno · e-mail`.
+→ vyplnit e-mail a heslo (nebo **Přihlásit se Google účtem**). Po přihlášení
+je v hlavičce štítek `☁ sdíleno · e-mail`.
 
 Zkouška ve dvou: jeden nahraje denní report, druhý ho musí do pár vteřin
 vidět, aniž by cokoliv načítal.
@@ -145,8 +191,10 @@ Obsah dne je uložený jako text v poli `json`. Je to schválně: klíče vad
 | *Aplikace je otevřená přímo z disku* | otevřít webovou verzi, ne soubor z disku |
 | *Sdílení dat není nastavené* | `js/data/firebase-config.js` je prázdný — krok 6 |
 | *nepodařilo se stáhnout … gstatic.com* | firemní síť blokuje Google — řešit s IT |
-| *Missing or insufficient permissions* | e-mail nesedí na pravidla z kroku 4 |
-| *auth/unauthorized-domain* | doména stránky chybí v kroku 3, bod 3 |
+| *Missing or insufficient permissions* | e-mail nesedí na pravidla z kroku 4 — u hesel bývá na vině `email_verified` |
+| *Nesprávný e-mail nebo heslo* | účet ještě není v **Authentication → Users** |
+| *Tenhle způsob přihlášení není zapnutý* | `login` v konfiguraci nesedí s krokem 3 |
+| *Doména téhle stránky není povolená* | chybí **Authorized domains**, krok 3 |
 
 ## Vypnutí
 

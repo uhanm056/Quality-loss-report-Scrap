@@ -122,6 +122,8 @@ font-weight:700;width:110px;font-family:inherit;text-align:right}
 .toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:10px;
 font-size:13px;font-weight:700;color:#fff;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.22);
 max-width:440px;line-height:1.5;display:none}
+.cinp{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;
+font-family:inherit;width:250px;background:var(--card);color:var(--text)}
 .cbox{border-radius:12px;padding:14px 20px;display:flex;gap:14px;align-items:center;
 font-size:14px;line-height:1.6;border:2px solid}
 .cbox.n{background:var(--bg);border-color:var(--border);color:var(--text)}
