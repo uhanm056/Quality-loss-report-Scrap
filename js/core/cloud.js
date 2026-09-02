@@ -55,7 +55,11 @@ async function cloudStart(){
     await loadJS(FBSDK+'firebase-app-compat.js');
     await loadJS(FBSDK+'firebase-auth-compat.js');
     await loadJS(FBSDK+'firebase-firestore-compat.js');
-    firebase.initializeApp(FBCFG);
+    /* prázdné hodnoty se nepředávají — appId je nepovinné a prázdný řetězec
+       některé části SDK mate; Auth a Firestore si vystačí s apiKey,
+       authDomain a projectId */
+    const cfg={};Object.keys(FBCFG).forEach(k=>{if(FBCFG[k])cfg[k]=FBCFG[k]});
+    firebase.initializeApp(cfg);
     fbAuth=firebase.auth();fbDb=firebase.firestore();
     fbAuth.onAuthStateChanged(u=>{
       if(u){CLOUD.user=u.email||u.uid;CLOUD.sts='on';CLOUD.err='';cloudAttach()}

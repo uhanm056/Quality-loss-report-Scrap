@@ -10,10 +10,10 @@
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
 
 const FBCFG={
-  apiKey:'',            /* DOPLNIT — 'AIzaSy…' z konzole */
+  apiKey:'',            /* DOPLNIT — Project settings → General → Web API Key */
   authDomain:'quality-loss-report.firebaseapp.com',
   projectId:'quality-loss-report',
-  appId:'',             /* DOPLNIT — nepovinné, ale ať to sedí s konzolí */
+  appId:'',             /* nepovinné — Auth i Firestore fungují i bez něj */
 
   /* jak se lidé přihlašují:
        'password' — e-mailem a heslem; účty zakládá správce v konzoli
