@@ -18,7 +18,8 @@ function dayBreak(k,f){
   const d=DB[k];if(!d||!d.p)return [];
   const o={};
   Object.entries(d.p).forEach(([pn,P])=>Object.entries(P[f]||{}).forEach(([n,v])=>{
-    const x=o[n]=o[n]||{e:0,q:0,proj:{}};
+    const key=f==='r'?rsnKey(n):(f==='lr'?lrKey(n):n);
+    const x=o[key]=o[key]||{e:0,q:0,proj:{}};
     x.e+=v.e;x.q+=v.q;x.proj[pn]=(x.proj[pn]||0)+v.e}));
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 

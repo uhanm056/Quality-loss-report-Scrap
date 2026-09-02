@@ -15,6 +15,18 @@ const fN=v=>Math.round(v||0).toLocaleString('cs-CZ');
 const fEs=v=>Math.abs(v||0)<10?(v||0).toFixed(2).replace('.',',')+' €':fE(v);
 const f3=v=>v==null?'—':v.toFixed(3)+'%';
 const esc=s=>String(s).replace(/'/g,"\\'");
+/* Kód vady se v QAD zapisuje jednou velkými, jednou malými písmeny — PVZD
+   i pvzd je „Vzduch". Pro sčítání se kód sjednotí na velká písmena, popis
+   zůstane, jak přišel. Klíč vady je 'kód§popis', u kombinací 'pracoviště¶kód§popis'. */
+const rsnKey=k=>{const t=String(k),i=t.indexOf('§');
+  return i<0?t:t.slice(0,i).toUpperCase()+t.slice(i)};
+const lrKey=k=>{const t=String(k),i=t.indexOf('¶');
+  return i<0?rsnKey(t):t.slice(0,i+1)+rsnKey(t.slice(i+1))};
+/* sloučí dvojice [klíč,{e,…}] podle klíče a seřadí sestupně podle EUR */
+const mergeBy=(pairs,fn)=>{const o={};
+  pairs.forEach(([k,v])=>{const key=fn?fn(k):k,x=o[key]=o[key]||{e:0,q:0};
+    x.e+=v.e||0;x.q+=v.q||0});
+  return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)};
 const grd={color:'rgba(27,58,92,.07)'};
 /* hodnota bodu pro plugin datalabels — jeho kontext má jen
    {active,chart,dataIndex,dataset,datasetIndex}, žádné c.raw */

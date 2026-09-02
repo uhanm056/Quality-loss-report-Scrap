@@ -22,6 +22,6 @@ function rwProjects(m){const o={};
 /* rozpad přes všechny projekty — f je 'l' (pracoviště), 'r' (příčiny) nebo 'it' (díly) */
 function rwBreak(m,f){const o={};
   rwDays(m).forEach(k=>Object.values(RW[k].p||{}).forEach(P=>
-    Object.entries(P[f]||{}).forEach(([n,v])=>{
-      o[n]=o[n]||{e:0,h:0,q:0};o[n].e+=v.e;o[n].h+=v.h||0;o[n].q+=v.q||0})));
+    Object.entries(P[f]||{}).forEach(([n,v])=>{const key=f==='r'?rsnKey(n):n;
+      o[key]=o[key]||{e:0,h:0,q:0};o[key].e+=v.e;o[key].h+=v.h||0;o[key].q+=v.q||0})));
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}

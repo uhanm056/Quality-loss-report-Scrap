@@ -16,7 +16,9 @@ function projTotals(m){const o={};
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 function projBreak(m,p,f){const o={};
   daysOf(m).forEach(k=>{const P=(DB[k].p||{})[p];if(!P)return;
-    Object.entries(P[f]||{}).forEach(([n,v])=>{o[n]=o[n]||{e:0,q:0};o[n].e+=v.e;o[n].q+=v.q})});
+    Object.entries(P[f]||{}).forEach(([n,v])=>{
+      const key=f==='r'?rsnKey(n):(f==='lr'?lrKey(n):n);
+      o[key]=o[key]||{e:0,q:0};o[key].e+=v.e;o[key].q+=v.q})});
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 const projDaily=(m,p)=>daysOf(m).map(k=>((DB[k].p||{})[p]||{e:0}).e);
 const hasDetail=m=>daysOf(m).some(k=>DB[k].p&&Object.keys(DB[k].p).length);
