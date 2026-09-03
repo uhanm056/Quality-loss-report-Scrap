@@ -11,10 +11,16 @@ if(!Object.keys(DB).length){try{const o=JSON.parse(localStorage.getItem('yf_scra
   if(Object.keys(o).length)DB=o}catch(e){}}
 try{SET=Object.assign(SET,JSON.parse(localStorage.getItem(SKEY)||'{}'))}catch(e){}
 try{const t=JSON.parse(localStorage.getItem('yf_tgtm')||'null');if(t)TGTM=Object.assign(TGTM,t)}catch(e){}
-const saveT=()=>{try{localStorage.setItem('yf_tgtm',JSON.stringify(TGTM))}catch(e){}};
+/* Sdílení dat (js/core/cloud.js) se přihlašuje k ukládání tady, aby se změna
+   dostala k ostatním bez ohledu na to, odkud přišla. Když sdílení běží
+   vypnuté, jsou tyhle háčky nedefinované a nic se neděje. */
+const cloudSync=()=>{if(window.cloudBump)cloudBump()};
+const cloudCfg=()=>{if(window.cfgPush)cfgPush()};
+const saveT=()=>{try{localStorage.setItem('yf_tgtm',JSON.stringify(TGTM))}catch(e){}
+  cloudCfg()};
 try{const p=JSON.parse(localStorage.getItem('yf_ptgtm')||'null');if(p)PTGTM=Object.assign(PTGTM,p)}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}
-  catch(e){toast('Nepodařilo se uložit: '+e.message,'#C0392B')}};
-const saveS=()=>{try{localStorage.setItem(SKEY,JSON.stringify(SET))}catch(e){}};
+  catch(e){toast('Nepodařilo se uložit: '+e.message,'#C0392B')}cloudSync()};
+const saveS=()=>{try{localStorage.setItem(SKEY,JSON.stringify(SET))}catch(e){}cloudCfg()};
 const saveR=()=>{try{localStorage.setItem(RKEY,JSON.stringify(RW))}
-  catch(e){toast('Nepodařilo se uložit rework: '+e.message,'#C0392B')}};
+  catch(e){toast('Nepodařilo se uložit rework: '+e.message,'#C0392B')}cloudSync()};

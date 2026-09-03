@@ -9,3 +9,6 @@ const ms0=monthsAvail();if(ms0.length)curMonth=ms0[ms0.length-1];
 const rw0=rwMonths();if(rw0.length)curRwMonth=rw0[rw0.length-1];
 renderBar();renderQ();renderDash();renderDays();renderSrc();renderTgt();renderRework();
 renderDefects();
+/* sdílení dat se zapíná až tady — bez konfigurace nebo při otevření z disku
+   se jen vykreslí panel s vysvětlením a nic dalšího se nestahuje */
+renderCloud();cloudStart();

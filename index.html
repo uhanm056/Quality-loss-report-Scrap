@@ -7,14 +7,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="css/styles.css?v=20260826b">
+<link rel="stylesheet" href="css/styles.css?v=20260902d">
 </head>
 <body>
 
 <div class="header">
   <div><h1>Scrap &amp; Quality Loss Rate</h1>
   <div class="sub">Yanfeng Automotive Interiors · Plant 1032</div></div>
-  <div class="hb"><span class="hbadge" id="hb1">—</span><span class="hbadge" id="hb2">—</span><span class="hbadge" id="hb3" style="display:none">—</span></div>
+  <div class="hb"><span class="hbadge" id="hb1">—</span><span class="hbadge" id="hb2">—</span><span class="hbadge" id="hb3" style="display:none">—</span><span class="hbadge" id="hb4" style="display:none">—</span></div>
 </div>
 
 <div class="tabs">
@@ -116,6 +116,8 @@
 
 <!-- ══════════ 5 · DATA & IMPORT ══════════ -->
 <div class="view" id="v5">
+  <div class="panel"><div class="ph"><span>Sdílení dat</span></div>
+    <div class="pb" id="cloudBody"></div></div>
   <div class="drop" id="dropZone">
     <div class="ic">📥</div>
     <div class="t">Přetáhni sem denní scrap report</div>
@@ -176,8 +178,9 @@
       padding-top:14px;border-top:1px solid var(--border)">
       <b>QLR měsíčně</b> pracuje s historií leden 2024 – červenec 2026, která je součástí aplikace.<br>
       <b>Denní přehled</b> a <b>Detail projektu</b> se plní z denních reportů, které nahrajete
-      v záložce <b>Data &amp; import</b>. Ukládají se do paměti prohlížeče na tomto počítači —
-      zálohu si stáhněte tamtéž.</div></div></div>
+      v záložce <b>Data &amp; import</b>. Ukládají se do paměti prohlížeče na tomto počítači;
+      jestli se sdílí i s ostatními, píše panel <b>Sdílení dat</b> tamtéž — a zálohu
+      si stáhnete na stejném místě.</div></div></div>
   <div class="panel"><div class="ph"><span>Měsíční targety a Sales</span>
     <span style="font-weight:600;opacity:.85">ze scrap reportu · target je % vůči Sales</span></div>
     <div class="pb" style="overflow-x:auto"><div id="tgtBody"></div>
@@ -200,38 +203,41 @@
      ══════════════════════════════════════════════════════════════════ -->
 
 <!-- data zapsaná v aplikaci -->
-<script src="js/data/qlr-history.js?v=20260826b"></script>
-<script src="js/data/monthly-detail.js?v=20260826b"></script>
-<script src="js/data/targets.js?v=20260826b"></script>
-<script src="js/data/locations.js?v=20260826b"></script>
+<script src="js/data/qlr-history.js?v=20260902d"></script>
+<script src="js/data/monthly-detail.js?v=20260902d"></script>
+<script src="js/data/targets.js?v=20260902d"></script>
+<script src="js/data/locations.js?v=20260902d"></script>
+<script src="js/data/firebase-config.js?v=20260902d"></script>
 
 <!-- jádro -->
-<script src="js/core/utils.js?v=20260826b"></script>
-<script src="js/core/storage.js?v=20260826b"></script>
-<script src="js/core/aggregate.js?v=20260826b"></script>
-<script src="js/core/daily.js?v=20260826b"></script>
-<script src="js/core/defects.js?v=20260826b"></script>
-<script src="js/core/month.js?v=20260826b"></script>
-<script src="js/core/rework.js?v=20260826b"></script>
-<script src="js/core/nav.js?v=20260826b"></script>
+<script src="js/core/utils.js?v=20260902d"></script>
+<script src="js/core/storage.js?v=20260902d"></script>
+<script src="js/core/aggregate.js?v=20260902d"></script>
+<script src="js/core/daily.js?v=20260902d"></script>
+<script src="js/core/defects.js?v=20260902d"></script>
+<script src="js/core/month.js?v=20260902d"></script>
+<script src="js/core/rework.js?v=20260902d"></script>
+<script src="js/core/cloud.js?v=20260902d"></script>
+<script src="js/core/nav.js?v=20260902d"></script>
 
 <!-- jednotlivé záložky -->
-<script src="js/views/qlr.js?v=20260826b"></script>
-<script src="js/views/top.js?v=20260826b"></script>
-<script src="js/views/dash.js?v=20260826b"></script>
-<script src="js/views/project.js?v=20260826b"></script>
-<script src="js/views/defects.js?v=20260826b"></script>
-<script src="js/views/data.js?v=20260826b"></script>
-<script src="js/views/source.js?v=20260826b"></script>
-<script src="js/views/targets.js?v=20260826b"></script>
-<script src="js/views/rework.js?v=20260826b"></script>
+<script src="js/views/qlr.js?v=20260902d"></script>
+<script src="js/views/top.js?v=20260902d"></script>
+<script src="js/views/dash.js?v=20260902d"></script>
+<script src="js/views/project.js?v=20260902d"></script>
+<script src="js/views/defects.js?v=20260902d"></script>
+<script src="js/views/data.js?v=20260902d"></script>
+<script src="js/views/source.js?v=20260902d"></script>
+<script src="js/views/targets.js?v=20260902d"></script>
+<script src="js/views/rework.js?v=20260902d"></script>
+<script src="js/views/cloud.js?v=20260902d"></script>
 
 <!-- import denních reportů -->
-<script src="js/import/parser.js?v=20260826b"></script>
-<script src="js/import/rework-parser.js?v=20260826b"></script>
+<script src="js/import/parser.js?v=20260902d"></script>
+<script src="js/import/rework-parser.js?v=20260902d"></script>
 
 <!-- start -->
-<script src="js/main.js?v=20260826b"></script>
+<script src="js/main.js?v=20260902d"></script>
 
 </body>
 </html>

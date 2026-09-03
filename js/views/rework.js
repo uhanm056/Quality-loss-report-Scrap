@@ -176,7 +176,11 @@ function renderRwDays(m){
     '</tbody></table>'+foot}
 
 window.setRwM=m=>{curRwMonth=m;renderBar();renderRework()};
-window.delRwDay=k=>{if(!confirm('Smazat rework za '+k.split('-').reverse().join('.')+'?'))return;
-  delete RW[k];saveR();renderBar();renderRework();toast('Den smazán.','#7F8C8D')};
-window.wipeRw=()=>{if(!confirm('Opravdu vymazat všechna data o reworku? Tohle nejde vrátit.'))return;
+window.delRwDay=k=>{if(!confirm('Smazat rework za '+k.split('-').reverse().join('.')+'?'+
+  (CLOUD.sts==='on'?'\n\nSdílená data jsou zapnutá — smaže se i ostatním.':'')))return;
+  delete RW[k];cloudDel('rework',k);saveR();
+  renderBar();renderRework();toast('Den smazán.','#7F8C8D')};
+window.wipeRw=()=>{if(!confirm('Opravdu vymazat všechna data o reworku? Tohle nejde vrátit.'+
+  (CLOUD.sts==='on'?'\n\nSdílená data jsou zapnutá — smaže se i ostatním.':'')))return;
+  cloudDel('rework',Object.keys(RW));
   RW={};saveR();curRwMonth=null;renderBar();renderRework();toast('Rework vymazán.','#7F8C8D')};

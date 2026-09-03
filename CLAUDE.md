@@ -124,7 +124,7 @@ Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekt
 
 ## Struktura aplikace
 
-Šest záložek:
+Osm záložek:
 
 Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
 
@@ -137,7 +137,8 @@ Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
    při jejich absenci padá zpět na měsíční `MDET`.
 5. **Trend vad** — Pareto vad a jejich vývoj po měsících nebo týdnech
    pro problem solving.
-6. **Data & import** — nahrávání denních reportů, seznam dnů, záloha.
+6. **Data & import** — nahrávání denních reportů, seznam dnů, záloha
+   a panel **Sdílení dat** (stav sdílení, přihlášení).
 7. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
 8. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
    Cíl scrapu se tu **nezadává** — počítá se jako target % × Sales.
@@ -157,6 +158,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/data/monthly-detail.js` | `MDET` — měsíční rozpad podle projektů |
 | `js/data/targets.js` | `TGTM`, `PTGTM`, `PSAL`, `AUG` + `mKey`/`mTgt`/`mSales`/`pTgt`/`pSales` |
 | `js/data/locations.js` | `LOCNAMES` — názvy pracovišť |
+| `js/data/firebase-config.js` | konfigurace sdílení dat — prázdná = sdílení vypnuté |
 | `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
@@ -164,6 +166,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/core/defects.js` | trend vad po měsících i týdnech — Pareto, ISO týdny, zařazení trendu |
 | `js/core/month.js` | měsíční výsledek proti targetu — cíl v EUR, rezerva, trend, kumulativ, `pace()` |
 | `js/core/rework.js` | `RW` agregace — měsíce, projekty, rozpady reworku |
+| `js/core/cloud.js` | sdílení dat přes Firestore — přihlášení, slučování, odesílání |
 | `js/core/nav.js` | přepínání záložek, horní lišta |
 | `js/views/qlr.js` | záložka 0 — grafy rolling 12M, YoY, scrap EUR |
 | `js/views/top.js` | záložka 0 — TOP kontributoři a jejich rozpad |
@@ -174,6 +177,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/views/data.js` | záložka 5 — seznam dnů, záloha, obnova |
 | `js/views/source.js` | záložka 6 — zdrojová data |
 | `js/views/targets.js` | záložka 7 — targety a Sales |
+| `js/views/cloud.js` | panel Sdílení dat v záložce 5 |
 | `js/import/parser.js` | čtení denních `.xlsx` reportů |
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
 | `js/main.js` | start aplikace |
@@ -193,10 +197,14 @@ Funkce volané z HTML atributů (`onclick`, `onchange`) se přiřazují jako
 
 Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`),
 rework v `yf_rework_daily_v1`. Targety v `yf_tgtm` a `yf_ptgtm`, nastavení
-v `yf_scrap_set_v1`. Záloha v záložce Data & import bere scrap i rework.
+v `yf_scrap_set_v1`. Záloha v záložce Data & import bere scrap i rework
+a **slučuje se, nepřepisuje** — dřív `DB=j.db` smazalo dny, které v záloze nebyly.
 
 Chart.js, plugin datalabels a SheetJS se stahují z CDN — bez internetu se
 aplikace otevře, ale grafy a import nefungují.
+
+Když je vyplněný `js/data/firebase-config.js`, přidá se k tomu ještě Firebase
+SDK z `gstatic.com` — stahuje se **až v tu chvíli**, ne při každém otevření.
 
 Klíčové datové struktury:
 
@@ -351,6 +359,63 @@ se prognóza ani povolené tempo nepočítají — chybějící dny nejsou nuly.
 
 ---
 
+### Sdílení dat mezi lidmi
+
+Počítá `js/core/cloud.js`, ukazuje panel **Sdílení dat** v záložce Data & import.
+Podrobný návod na zapnutí je v `FIREBASE.md`.
+
+Bez toho platí, co platilo vždycky: data žijí v `localStorage` jednoho prohlížeče.
+Kolega, kterému se pošle odkaz, nahraje report u sebe a druhému se nic neobjeví —
+to byla přesně ta stížnost, kvůli které tahle vrstva vznikla.
+
+Vrstva je **vypnutá, dokud není důvod ji zapnout**. Vypíná ji:
+
+| stav | kdy |
+|---|---|
+| `off` / `file` | stránka je otevřená z disku — `file://` má origin `null`, Firestore tam nejede |
+| `off` / `nocfg` | `FBCFG.apiKey` nebo `projectId` je prázdný |
+| `err` | SDK se nestáhlo nebo Firestore odmítl přístup |
+
+V žádném z těch stavů se nestahuje Firebase SDK a aplikace se chová jako dřív.
+**Podmínka „funguje otevřené z disku bez buildu a serveru" tím zůstává splněná.**
+
+Uložení ve Firestore:
+
+```
+plant1032/scrap/dny/{den}     jeden den scrapu
+plant1032/rework/dny/{den}    jeden den reworku
+plant1032/konfig              TGTM, PTGTM, SET
+```
+
+**Obsah dne je uložený jako text v poli `json`, ne jako vnořený objekt.** Klíče
+vad (`PVZD§Vzduch`) a popisy s tečkou by jako názvy polí ve Firestore neprošly.
+
+Slučuje se **po dnech podle času nahrání `at`** — novější vyhrává, při shodě
+zůstává, co je v prohlížeči. Různé dny se sečtou. Stejná logika je i v obnově
+ze zálohy (`mergeDays` v `js/views/data.js`), aby se obojí chovalo stejně.
+
+Odesílá se přes háčky v `js/core/storage.js`: `save()` a `saveR()` volají
+`cloudBump()` (odloženo o 600 ms, aby se import dvaceti dnů odeslal najednou),
+`saveT()` a `saveS()` volají `cfgPush()`. Díky tomu nemusí o cloudu vědět parser
+ani žádná záložka. Příchozí změna nastaví `CLOUD.applying`, aby se hned
+neposlala zpátky.
+
+**Mazání se musí poslat zvlášť.** `cloudPush()` jen zapisuje — bez `cloudDel()`
+by se smazaný den při další synchronizaci vrátil. Volá se z `delDay`, `wipe`,
+`delRwDay` a `wipeRw`.
+
+**Ochranu dělají Security Rules, ne `apiKey`.** Stránka je veřejná, takže klíč
+je v ní vidět — tak to u Firebase má být. Bez pravidel by data mohl číst
+i přepsat kdokoliv, kdo zná adresu.
+
+Přihlášení řídí `FBCFG.login`: `'password'` (e-mail a heslo, účty zakládá
+správce v konzoli), `'google'` nebo `'both'`. U hesel **nesmí být v pravidlech
+`email_verified == true`** — ručně založený účet ho má `false` a neprojde
+nikdo. Zato tam musí být výčet konkrétních e-mailů: `apiKey` je veřejný, takže
+při zapnutém sign-upu by si kdokoliv založil účet na vymyšlenou adresu z firemní
+domény. Proto se v konzoli vypíná **Authentication → Settings → Enable create
+(sign-up)**.
+
 ## Jak pracovat s tímhle projektem
 
 **Ověřovat proti reportu.** Každou změnu ve výpočtu porovnat s číslem
@@ -375,5 +440,6 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 
 - [x] Rozdělit `index.html` — hotovo, kód je v `css/` a `js/`
 - [ ] Skript, který z QAD exportu vygeneruje datové bloky místo ručního přepisování
+- [ ] Vyplnit `js/data/firebase-config.js` a zapnout sdílení podle `FIREBASE.md`
 - [ ] Doplnit srpnový QAD export → rozpad pracovišť za srpen
 - [ ] Ověřit červnovou tabulku, která nesedí s QAD (G463 M 6 269 € vs 51 538 €)
