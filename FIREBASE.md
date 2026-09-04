@@ -86,7 +86,8 @@ service cloud.firestore {
         && request.auth.token.email in [
           'milan.hanus@yfai.com',
           'roma.zubek@yfai.com',
-          'martin.slaby@yfai.com'
+          'martin.slaby@yfai.com',
+          'stepanka.svitakova@yfai.com'
         ];
     }
   }
