@@ -374,7 +374,19 @@ Vrstva je **vypnutá, dokud není důvod ji zapnout**. Vypíná ji:
 |---|---|
 | `off` / `file` | stránka je otevřená z disku — `file://` má origin `null`, Firestore tam nejede |
 | `off` / `nocfg` | `FBCFG.apiKey` nebo `projectId` je prázdný |
+| `off` / `user` | uživatel dal **Pokračovat bez sdílení** (`yf_cloud_off` v localStorage) |
 | `err` | SDK se nestáhlo nebo Firestore odmítl přístup |
+
+**Z chyby musí vést cesta zpátky.** Dokud nejsou ve Firebase hotová pravidla,
+vidí uživatel jen červený pruh — proto je vedle „Zkusit znovu" i **Pokračovat
+bez sdílení** (`cloudSkip()`), které vrstvu vypne a zapamatuje si to. Zpátky
+se zapíná tlačítkem v panelu (`cloudResume()`); SDK je už stažené, takže se jen
+znovu naváže odběr. Stejná cesta zpět je i na přihlašovací obrazovce — nikdo
+nesmí zůstat zaseklý na přihlášení.
+
+Hlášky z Firestore se překládají (`FSMSG`) stejně jako ty z Auth (`AUTHMSG`) —
+`permission-denied` řekne rovnou, že jde o Security Rules, ne „Missing or
+insufficient permissions".
 
 V žádném z těch stavů se nestahuje Firebase SDK a aplikace se chová jako dřív.
 **Podmínka „funguje otevřené z disku bez buildu a serveru" tím zůstává splněná.**
