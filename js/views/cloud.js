@@ -21,10 +21,20 @@ function renderCloud(){
   if(CLOUD.sts==='err'){
     b.innerHTML=box('r','⚠','<b>Sdílení dat se nepodařilo.</b><br>'+
       '<span style="font-size:13px">'+escH(CLOUD.err)+'</span><br>'+jen)+
-      '<div style="margin-top:12px"><button class="btn" onclick="cloudStart()">Zkusit znovu</button></div>';
+      '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn" onclick="cloudStart()">↻ Zkusit znovu</button>'+
+      '<button class="btn" onclick="cloudSkip()">← Pokračovat bez sdílení</button>'+
+      (CLOUD.user?'<button class="btn" onclick="cloudLogout()">Odhlásit '+
+        escH(CLOUD.user)+'</button>':'')+'</div>';
     return}
 
   if(CLOUD.sts==='off'){
+    if(CLOUD.why==='user'){
+      b.innerHTML=box('n','🚫','<b>Sdílení dat je vypnuté.</b> Vypnul sis ho ty — '+
+        'aplikace se chová jako dřív. '+jen)+
+        '<div style="margin-top:12px"><button class="btn" onclick="cloudResume()">'+
+        '☁ Zapnout sdílení</button></div>';
+      return}
     if(CLOUD.why==='file')
       b.innerHTML=box('n','💾','<b>Aplikace je otevřená přímo z disku.</b> Sdílení dat '+
         'v tomhle režimu nefunguje — prohlížeč ho u souborů z disku nepovolí. '+
@@ -53,6 +63,9 @@ function renderCloud(){
     if(jak!=='password')
       form+='<div style="margin-top:12px"><button class="btn" onclick="cloudLogin()">'+
         '🔑 Přihlásit se Google účtem</button></div>';
+    form+='<div style="margin-top:10px"><button class="btn" onclick="cloudSkip()" '+
+      'style="border:0;background:none;color:var(--muted);font-weight:600;padding-left:0">'+
+      '← Pokračovat bez sdílení</button></div>';
     b.innerHTML=box('n','🔒','<b>Sdílená data jsou zamčená.</b> Přihlaš se účtem, '+
       'který ti založil správce'+(FBCFG.domain?' (<b>@'+escH(FBCFG.domain)+'</b>)':'')+
       ', a uvidíš dny, které nahráli ostatní.<br>'+jen)+form+

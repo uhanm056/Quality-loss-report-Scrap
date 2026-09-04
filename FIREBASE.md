@@ -191,10 +191,14 @@ Obsah dne je uložený jako text v poli `json`. Je to schválně: klíče vad
 | *Aplikace je otevřená přímo z disku* | otevřít webovou verzi, ne soubor z disku |
 | *Sdílení dat není nastavené* | `js/data/firebase-config.js` je prázdný — krok 6 |
 | *nepodařilo se stáhnout … gstatic.com* | firemní síť blokuje Google — řešit s IT |
-| *Missing or insufficient permissions* | e-mail nesedí na pravidla z kroku 4 — u hesel bývá na vině `email_verified` |
+| *Firestore odmítl přístup … Security Rules* | e-mail nesedí na pravidla z kroku 4 — u hesel bývá na vině `email_verified` |
 | *Nesprávný e-mail nebo heslo* | účet ještě není v **Authentication → Users** |
 | *Tenhle způsob přihlášení není zapnutý* | `login` v konfiguraci nesedí s krokem 3 |
 | *Doména téhle stránky není povolená* | chybí **Authorized domains**, krok 3 |
+
+Z každé chyby vede v panelu tlačítko **← Pokračovat bez sdílení**: aplikace
+pak jede jen s daty v prohlížeči a volba se pamatuje. Zpátky se sdílení zapne
+tlačítkem **☁ Zapnout sdílení** ve stejném panelu.
 
 ## Vypnutí
 

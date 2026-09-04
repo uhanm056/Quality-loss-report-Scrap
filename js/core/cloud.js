@@ -28,8 +28,15 @@ const CLOUD={sts:'off',why:'',user:null,err:'',loginErr:'',last:null,busy:false,
 
 let fbAuth=null,fbDb=null,cloudSubs=[],bumpT=null;
 
+/* Uživatel si sdílení může vypnout — třeba když ještě nejsou hotová pravidla
+   ve Firebase a nemá cenu na chybu koukat při každém otevření. Volba se
+   pamatuje, takže se aplikace příště rovnou chová jako dřív. */
+const CLOUDOFF='yf_cloud_off';
+let cloudMuted=false;try{cloudMuted=localStorage.getItem(CLOUDOFF)==='1'}catch(e){}
+
 /* proč je sdílení vypnuté — '' znamená, že jde zapnout */
 function cloudWhy(){
+  if(cloudMuted)return 'user';
   if(location.protocol==='file:')return 'file';
   if(typeof FBCFG!=='object'||!FBCFG.apiKey||!FBCFG.projectId)return 'nocfg';
   return ''}
@@ -68,9 +75,42 @@ async function cloudStart(){
   }catch(e){cloudErr(e)}
   CLOUD.busy=false;renderCloud()}
 
+/* hlášky z Firestore jsou anglicky; nejčastější se přeloží i s tím,
+   co s nimi dělat — jinak uživatel vidí jen „Missing or insufficient permissions" */
+const FSMSG={
+  'permission-denied':'Firestore odmítl přístup. E-mail neprošel pravidly — '+
+    'zkontroluj Security Rules ve Firebase konzoli (Firestore Database → Rules).',
+  'unauthenticated':'Přihlášení vypršelo. Přihlas se znovu.',
+  'unavailable':'Firestore je nedostupný — vypadá to na výpadek připojení.',
+  'failed-precondition':'Firestore odmítl požadavek. Zkontroluj nastavení databáze v konzoli.',
+  'resource-exhausted':'Vyčerpaný denní limit Firebase. Zkus to zítra.'};
+
 function cloudErr(e){
-  CLOUD.sts='err';CLOUD.err=(e&&e.message)||String(e);CLOUD.busy=false;
+  const c=e&&e.code;
+  CLOUD.sts='err';CLOUD.busy=false;
+  CLOUD.err=FSMSG[c]||AUTHMSG[c]||(e&&e.message)||String(e);
   renderCloud();cloudBadge()}
+
+/* ── vypnutí a opětovné zapnutí sdílení ────────────────────────────────── */
+
+/* cesta zpátky z chybové hlášky: aplikace jede dál jen s daty v prohlížeči */
+window.cloudSkip=()=>{
+  cloudMuted=true;try{localStorage.setItem(CLOUDOFF,'1')}catch(e){}
+  cloudDetach();
+  if(fbAuth&&fbAuth.currentUser){try{fbAuth.signOut()}catch(e){}}
+  CLOUD.sts='off';CLOUD.why='user';CLOUD.err='';CLOUD.loginErr='';CLOUD.user=null;
+  renderCloud();cloudBadge();
+  toast('Sdílení vypnuté. Data zůstávají v tomhle prohlížeči.','#7F8C8D')};
+
+/* SDK už je jednou stažené, takže se jen znovu naváže odběr */
+window.cloudResume=()=>{
+  cloudMuted=false;try{localStorage.removeItem(CLOUDOFF)}catch(e){}
+  CLOUD.err='';CLOUD.loginErr='';CLOUD.why='';
+  if(!fbAuth){cloudStart();return}
+  if(fbAuth.currentUser){CLOUD.user=fbAuth.currentUser.email||fbAuth.currentUser.uid;
+    CLOUD.sts='on';cloudAttach()}
+  else CLOUD.sts='out';
+  renderCloud();cloudBadge()};
 
 /* ── přihlášení ────────────────────────────────────────────────────────── */
 /* Účty zakládá správce v konzoli Firebase, sám se nikdo nezaregistruje.
