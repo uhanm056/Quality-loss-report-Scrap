@@ -21,6 +21,14 @@ function dashMonth(R){
       'Z reportu se nenačítají — zadávají se ručně z listu <b>Target</b>. '+
       '<button class="btn" style="margin-left:6px" onclick="openTgt(\''+R.key+'\')">'+
       '⚙️ Doplnit v Nastavení</button>'}
+  else if(R.stale){cls='warn';ic='📐';hd='Sales nesedí na scrap';
+    /* scrap za celý měsíc proti Sales ke snímku — procento by bylo nesmysl */
+    tx='Scrap <b>'+fE(R.eur)+'</b> je za celý měsíc, ale Sales v Nastavení '+
+      '(<b>'+fE(R.sales)+'</b>) jsou jen ke snímku z průběhu měsíce. '+
+      'Procento ani porovnání s cílem by z toho nevyšlo správně — '+
+      'doplňte Sales za celý měsíc z měsíčního reportu a odškrtněte <b>probíhá</b>.'+
+      '<button class="btn" style="margin-left:6px" onclick="openTgt(\''+R.key+'\')">'+
+      '⚙️ Doplnit v Nastavení</button>'}
   else if(over){cls='bad';ic='⛔';hd='Jsme nad cílem';
     tx='Skutečnost <b>'+R.pct.toFixed(3)+' %</b> ze Sales proti cíli <b>'+R.target.toFixed(2)+' %</b> — '+
       '<b>'+R.pb.toFixed(2)+' p.b. nad</b>. Do cíle chybí ušetřit <b>'+fE(-R.rez)+'</b>.'}
@@ -30,7 +38,9 @@ function dashMonth(R){
   else{cls='ok';ic='✅';hd=R.partial?'Držíme tempo':'Skončili jsme pod cílem';
     tx='Skutečnost <b>'+R.pct.toFixed(3)+' %</b> ze Sales proti cíli <b>'+R.target.toFixed(2)+' %</b> — '+
       '<b>'+Math.abs(R.pb).toFixed(2)+' p.b. pod</b>. Rezerva <b>'+fE(R.rez)+'</b>.'}
-  if(R.partial&&R.pct!=null)tx+=' Měsíc probíhá — scrap i Sales jsou ke stejnému snímku dat.';
+  /* u nesouhlasného snímku by ta věta říkala pravý opak — právě že nesedí */
+  if(R.partial&&!R.stale&&R.pct!=null)
+    tx+=' Měsíc probíhá — scrap i Sales jsou ke stejnému snímku dat.';
 
   /* trend proti předchozímu měsíci */
   let trend='—',tsub='předchozí měsíc neznám',tcls='b';

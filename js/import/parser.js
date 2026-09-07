@@ -17,7 +17,9 @@ function toDate(v){
   const d=new Date(s);return isNaN(d)?null:d}
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 
-function parseWB(wb){
+/* Největší list v sešitě a v něm řádek s hlavičkou. Sdílí to parser denních
+   dat i `mdet-parser.js`, aby se hlavička nehledala dvakrát dvěma způsoby. */
+function pickSheet(wb){
   let best=null,bn=0;
   for(const nm of wb.SheetNames){const r=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:null,raw:true});
     if(r.length>bn){bn=r.length;best=r}}
@@ -27,6 +29,10 @@ function parseWB(wb){
     const fl=row.filter(c=>c!=null&&String(c).trim()!=='').length;
     if(fl>=4&&findCol(row,['EUR','Cost Total','Hodnota'])>=0){hr=i;hdr=row;break}
     if(fl>(hdr||[]).filter(c=>c!=null).length){hr=i;hdr=row}}
+  return{rows:best,hr:hr,hdr:hdr}}
+
+function parseWB(wb){
+  const sh=pickSheet(wb),best=sh.rows,hr=sh.hr,hdr=sh.hdr;
   const iE=findCol(hdr,['EUR','Cost Total','Hodnota','Value']);
   const iD=findCol(hdr,['Effective Date','Date','Datum']);
   const iP=findCol(hdr,['Group 2','Projekt','Project','Group']);
@@ -68,7 +74,7 @@ function parseWB(wb){
 
 function handleFiles(list){
   const files=[...list];if(!files.length)return;
-  let done=0,add=0,rep=0;const errs=[],tg={months:0,sales:null,snap:null,stale:[]};
+  let done=0,add=0,rep=0;const errs=[],tg={months:0,sales:null,snap:null,stale:[],mdet:[]};
   files.forEach(f=>{const rd=new FileReader();
     rd.onload=e=>{
       try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
@@ -81,19 +87,26 @@ function handleFiles(list){
           if(t.months)tg.months+=t.months;
           if(t.sales){tg.sales=t.sales;tg.snap=t.snap}
           t.stale.forEach(k=>{if(tg.stale.indexOf(k)<0)tg.stale.push(k)})}
-        catch(err){errs.push(f.name+' (targety): '+err.message)}}
+        catch(err){errs.push(f.name+' (targety): '+err.message)}
+        /* měsíční rozpad na pracoviště a vady — kvůli Detailu projektu
+           a měsíčnímu trendu vad */
+        try{applyMdet(wb).forEach(m=>{if(tg.mdet.indexOf(m)<0)tg.mdet.push(m)})}
+        catch(err){errs.push(f.name+' (měsíční rozpad): '+err.message)}}
       catch(err){errs.push(f.name+': '+err.message)}
       if(++done===files.length){save();
         const ks=Object.keys(DB).sort();if(ks.length)curMonth=ks[ks.length-1].slice(0,7);
-        renderBar();renderDash();renderDays();renderTgt();renderQ();
+        renderBar();renderDash();renderDays();renderTgt();renderQ();renderDefects();
+        if(curTab===3)renderProj();
         if(errs.length)toast('⚠ '+errs.join(' | '),'#C0392B');
         else if(tg.stale.length)toast('✓ Načteno '+add+' nových dnů'+
-          (tg.months?' · targety pro '+tg.months+' měsíců':'')+
+          (tg.months?' · targety pro '+plM(tg.months):'')+
+          (tg.mdet.length?' · rozpad za '+plM(tg.mdet.length):'')+
           (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):'')+
           ' ⚠ '+tg.stale.map(mLabel).join(', ')+' už má data za celý měsíc, ale Sales '+
           'v Nastavení jsou jen ze snímku — doplňte je z měsíčního reportu.','#E8A020')
         else toast('✓ Načteno '+add+' nových dnů'+(rep?', '+rep+' přepsáno':'')+
-          (tg.months?' · targety z workplanu pro '+tg.months+' měsíců':'')+
+          (tg.months?' · targety z workplanu pro '+plM(tg.months):'')+
+          (tg.mdet.length?' · měsíční rozpad za '+plM(tg.mdet.length):'')+
           (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):''),'#27AE60')}};
     rd.readAsArrayBuffer(f)})}
 const dz=document.getElementById('dropZone'),fi=document.getElementById('fileIn');

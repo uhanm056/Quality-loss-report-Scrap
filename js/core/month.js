@@ -51,6 +51,15 @@ function actEur(k){
   if(daysOf(k).length)return{eur:sumM(k),src:'denní reporty'};
   return null}
 
+/* aktuální kalendářní měsíc — období, které ještě neskončilo */
+const curKey=()=>{const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+
+/* Sales jsou snímek, ale měsíc už podle kalendáře skončil.
+   Scrap se pak sčítá za celý měsíc a Sales jsou jen k datu exportu — procento
+   z toho vyjde nesmyslně vysoké a s cílem se porovnávat nedá. */
+const salesStale=k=>!!((TGTM[k]||{}).part)&&k<curKey();
+
 /* kompletní výsledek měsíce — vše, co jde spočítat ze stejného snímku dat */
 function monthResult(k){
   const o=TGTM[k]||{},cil=cilEur(k),act=actEur(k);
@@ -60,7 +69,8 @@ function monthResult(k){
   const prev=prevKey(k),pAct=prev?actEur(prev):null;
   const pPct=prev&&pAct&&TGTM[prev].sales?pAct.eur/TGTM[prev].sales*100:null;
   return{key:k,label:mLabel(k),target:o.t!=null?o.t:null,targetCI:o.ci!=null?o.ci:null,
-    sales:o.sales||null,partial:!!o.part,cil:cil,eur:eur,src:act?act.src:null,pct:pct,
+    sales:o.sales||null,partial:!!o.part,stale:salesStale(k),
+    cil:cil,eur:eur,src:act?act.src:null,pct:pct,
     /* kladná rezerva = pod cílem, záporná = nad cílem */
     rez:cil!=null&&eur!=null?cil-eur:null,
     pb:pct!=null&&o.t!=null?pct-o.t:null,
@@ -70,7 +80,7 @@ function monthResult(k){
 /* všechny měsíce z tabulky targetů, od nejstaršího — pro kumulativ */
 function yearRows(){
   return Object.keys(TGTM).filter(k=>TGTM[k].t!=null&&TGTM[k].sales).sort()
-    .map(monthResult).filter(r=>r&&r.eur!=null)}
+    .map(monthResult).filter(r=>r&&r.eur!=null&&!r.stale)}
 
 /* součet cílů a skutečnosti přes měsíce, kde známe obojí */
 function yearSum(){

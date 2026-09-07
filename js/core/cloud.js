@@ -24,7 +24,11 @@ const FBSDK='https://www.gstatic.com/firebasejs/10.12.5/';
 
 /* sts: 'off' nedostupné · 'out' odhlášen · 'on' přihlášen · 'err' chyba */
 const CLOUD={sts:'off',why:'',user:null,err:'',loginErr:'',last:null,busy:false,
-  synced:{scrap:false,rework:false},rem:{scrap:{},rework:{}},applying:false};
+  synced:{scrap:false,rework:false,mdet:false},
+  rem:{scrap:{},rework:{},mdet:{}},applying:false};
+
+/* co všechno se sdílí po záznamech (den, resp. měsíc u rozpadu) */
+const KINDS=['scrap','rework','mdet'];
 
 let fbAuth=null,fbDb=null,cloudSubs=[],bumpT=null;
 
@@ -43,10 +47,11 @@ function cloudWhy(){
 
 /* ── cesty ve Firestore ────────────────────────────────────────────────── */
 const cRoot=()=>fbDb.collection(FBCFG.root||'plant1032');
-const cDays=kind=>cRoot().doc(kind==='rework'?'rework':'scrap').collection('dny');
+const cDays=kind=>kind==='mdet'?cRoot().doc('mdet').collection('mesice')
+  :cRoot().doc(kind==='rework'?'rework':'scrap').collection('dny');
 const cKonf=()=>cRoot().doc('konfig');
-const mapOf=kind=>kind==='rework'?RW:DB;
-const saveOf=kind=>kind==='rework'?saveR:save;
+const mapOf=kind=>kind==='mdet'?MDETI:(kind==='rework'?RW:DB);
+const saveOf=kind=>kind==='mdet'?saveM:(kind==='rework'?saveR:save);
 
 /* ── načtení SDK až ve chvíli potřeby ──────────────────────────────────── */
 function loadJS(u){return new Promise((res,rej)=>{
@@ -173,11 +178,12 @@ window.cloudLogout=()=>{if(fbAuth){loginMail='';CLOUD.loginErr='';fbAuth.signOut
 
 /* ── odběr změn ────────────────────────────────────────────────────────── */
 function cloudDetach(){cloudSubs.forEach(f=>{try{f()}catch(e){}});cloudSubs=[];
-  CLOUD.synced={scrap:false,rework:false};CLOUD.rem={scrap:{},rework:{}}}
+  CLOUD.synced={};CLOUD.rem={};
+  KINDS.forEach(k=>{CLOUD.synced[k]=false;CLOUD.rem[k]={}})}
 
 function cloudAttach(){
   cloudDetach();
-  ['scrap','rework'].forEach(kind=>{
+  KINDS.forEach(kind=>{
     cloudSubs.push(cDays(kind).onSnapshot(
       snap=>applySnap(kind,snap),cloudErr))});
   cloudSubs.push(cKonf().onSnapshot(d=>cfgPull(d),cloudErr))}
@@ -199,10 +205,14 @@ function applySnap(kind,snap){
   CLOUD.synced[kind]=true;CLOUD.last=new Date();
   if(ch){CLOUD.applying=true;saveOf(kind)();CLOUD.applying=false;cloudRefresh(kind,ch)}
   renderCloud();cloudBadge();
-  if(CLOUD.synced.scrap&&CLOUD.synced.rework)cloudBump()}
+  if(KINDS.every(k=>CLOUD.synced[k]))cloudBump()}
 
 /* překreslení po změně, která přišla od kolegy */
 function cloudRefresh(kind,ch){
+  if(kind==='mdet'){mdetApply();
+    renderBar();renderQ();renderDash();renderDefects();
+    if(curTab===3)renderProj();
+    toast('☁ Ze sdílených dat přišel měsíční rozpad ('+ch+'×).','#2E6DA4');return}
   if(kind==='rework'){const ms=rwMonths();
     if(!curRwMonth||!ms.includes(curRwMonth))curRwMonth=ms[ms.length-1]||null;
     renderBar();renderRework()}
@@ -229,9 +239,9 @@ async function cloudPushKind(kind){
   return todo.length}
 
 async function cloudPush(){
-  if(CLOUD.sts!=='on'||!CLOUD.synced.scrap||!CLOUD.synced.rework)return;
-  try{const a=await cloudPushKind('scrap'),b=await cloudPushKind('rework');
-    if(a+b){CLOUD.last=new Date();renderCloud()}}
+  if(CLOUD.sts!=='on'||!KINDS.every(k=>CLOUD.synced[k]))return;
+  try{let n=0;for(const k of KINDS)n+=await cloudPushKind(k);
+    if(n){CLOUD.last=new Date();renderCloud()}}
   catch(e){cloudErr(e)}}
 
 /* volá se z save() a saveR() — sloučí rychlé změny po importu do jednoho zápisu */

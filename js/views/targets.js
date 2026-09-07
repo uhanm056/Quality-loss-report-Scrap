@@ -8,12 +8,11 @@ function renderTgt(){
   const ks=Object.keys(TGTM).sort();
   el.innerHTML='<table class="tbl"><thead><tr><th>Měsíc</th><th class="num">Target %</th>'+
     '<th class="num">Target + CI %</th><th class="num">Sales EUR</th>'+
-    '<th class="num">Cíl v EUR</th><th></th></tr></thead><tbody>'+
+    '<th class="num">Cíl v EUR</th><th>Sales jen ke snímku</th><th></th></tr></thead><tbody>'+
     ks.map(function(k){const o=TGTM[k],mm=+k.slice(5,7);
       const eur=(o.t&&o.sales)?Math.round(o.t/100*o.sales):null;
       return '<tr id="tgr_'+k+'"'+(o.part?' style="background:#FEF9E7"':'')+
-      '><td><b>'+MN[mm-1]+' '+k.slice(0,4)+'</b>'+
-      (o.part?' <span class="tag n">probíhá</span>':'')+'</td>'+
+      '><td><b>'+MN[mm-1]+' '+k.slice(0,4)+'</b></td>'+
       '<td class="num"><input class="inp" style="width:88px" type="number" step="0.01" value="'+
         (o.t!=null?o.t:'')+'" onchange="setTgt(\''+k+'\',\'t\',this.value)"></td>'+
       '<td class="num"><input class="inp" style="width:88px" type="number" step="0.01" value="'+
@@ -21,8 +20,18 @@ function renderTgt(){
       '<td class="num"><input class="inp" style="width:120px" type="number" value="'+
         (o.sales!=null?o.sales:'')+'" onchange="setTgt(\''+k+'\',\'sales\',this.value)"></td>'+
       '<td class="num"><b>'+(eur!=null?fE(eur):'—')+'</b></td>'+
+      '<td><label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">'+
+        '<input type="checkbox"'+(o.part?' checked':'')+
+        ' onchange="setPart(\''+k+'\',this.checked)">'+
+        (o.part?'<b>probíhá</b>':'<span style="color:var(--muted)">celý měsíc</span>')+
+        '</label></td>'+
       '<td style="text-align:right"><button class="btn dngr" onclick="delTgt(\''+k+'\')">×</button></td></tr>'}).join('')+
     '</tbody></table>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7">'+
+    '<b>Sales jen ke snímku</b> zaškrtněte, dokud jsou Sales za rozdělaný měsíc — '+
+    'aplikace pak scrap a Sales porovnává ke stejnému datu a nepočítá prognózu '+
+    'proti celoměsíčnímu cíli. Po uzávěrce doplňte Sales za celý měsíc a odškrtněte.'+
+    '</div>'+
     '<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
     '<span class="slabel">přidat měsíc</span>'+
     '<input class="inp" id="ntM" style="width:110px" placeholder="2026-09">'+
@@ -51,6 +60,12 @@ window.setPT=(k,n,i,v)=>{PTGTM[k]=PTGTM[k]||{};PTGTM[k][n]=PTGTM[k][n]||[null,nu
 window.setTgt=(k,f,v)=>{TGTM[k]=TGTM[k]||{};
   TGTM[k][f]=v===''?null:(f==='sales'?Math.round(+v):+v);saveT();
   renderTgt();renderDash();if(qSub===0)renderTop();toast('✓ Uloženo.','#27AE60')};
+/* `part` říká, že Sales jsou jen ke snímku z průběhu měsíce, ne za celý měsíc.
+   Dřív šel zapsat jen v kódu, takže ručně přidaný měsíc se počítal jako uzavřený. */
+window.setPart=(k,v)=>{TGTM[k]=TGTM[k]||{};
+  if(v)TGTM[k].part=1;else delete TGTM[k].part;
+  saveT();renderTgt();renderBar();renderDash();if(qSub===0)renderTop();
+  toast('✓ Uloženo.','#27AE60')};
 window.delTgt=k=>{if(!confirm('Smazat '+k+'?'))return;delete TGTM[k];saveT();renderTgt();renderDash()};
 window.addTgt=()=>{const v=(document.getElementById('ntM').value||'').trim();
   if(!/^\d{4}-\d{2}$/.test(v)){toast('Zadej ve tvaru 2026-09','#C0392B');return}

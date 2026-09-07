@@ -57,7 +57,10 @@ function rsnPeriods(){
       const kon=new Date(weekStart(k));kon.setUTCDate(kon.getUTCDate()+6);
       const konIso=kon.toISOString().slice(0,10);
       return{key:k,label:'T'+k.slice(6),sub:weekRange(k),part:!!(ld&&ld<konIso)}})}
-  return rsnMonths().map(m=>({key:String(m),label:MN[m-1],sub:'2026',part:false}))}
+  /* Probíhající měsíc do trendu nepatří ze stejného důvodu jako useknutý
+     týden — pár dnů by vypadalo jako vyřešená vada. */
+  return rsnMonths().map(m=>{const k=mKey(m);
+    return{key:String(m),label:MN[m-1],sub:k.slice(0,4),part:k>=curKey()}})}
 
 /* projekty, které se v rozpadu vyskytují */
 function rsnProjects(){
