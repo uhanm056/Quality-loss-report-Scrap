@@ -214,6 +214,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/parser.js` | čtení denních `.xlsx` reportů |
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
 | `js/import/target-parser.js` | čtení workplanu a Sales ze stejného souboru — listy `Target` a `overview mng` |
+| `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
 | `js/main.js` | start aplikace |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
@@ -280,6 +281,48 @@ do Nastavení doplní skutečné Sales, počítá se všechno znovu z reálných
 Kumulativ 2026 sečte měsíční cíle a skutečnosti. Rezerva se může o pár set EUR
 lišit od `SV` (saving ze scrap reportu) — `SV` se počítá až po uzávěrce.
 
+### Měsíční rozpad z importu
+
+Staví ho `js/import/mdet-parser.js` ze stejného souboru jako denní data.
+**Vlastní průchod daty**, protože denní parser řádky s kódem 20 vůbec nenačítá
+(denní přehled je w/o tests), zatímco `MDET` drží obě metriky vedle sebe.
+
+Ukládá se do `MDETI` (klíč `yf_mdet`) **odděleně od zapsaného základu**
+v `js/data/monthly-detail.js`. `mdetApply()` postaví `MDET` znovu z `MDET0`
+(nedotčená kopie základu) a překlopí přes něj importované měsíce — proto se
+dá po smazání měsíce ze sdílených dat vrátit k tomu, co je v kódu.
+
+Sdílí se po měsících jako `plant1032/mdet/mesice/{měsíc}`, stejnou logikou
+jako dny (novější `at` vyhrává). Seznamy jsou omezené (`MDLIM`: 15 lokací,
+25 vad, 30 kombinací) — konec seznamu jsou drobné a nafukovaly by úložiště.
+
+**Přepisuje se jen soubor, který pokrývá aspoň tolik dnů měsíce** (`dn`) jako
+ten uložený. Bez toho by běžný denní report za jeden den přepsal rozpad celého
+měsíce z měsíčního exportu.
+
+Ověřeno proti reálnému exportu: měsíce 1–7 vyšly **na euro stejně** jako
+dosud zapsaný základ, srpen se opravil z projektových součtů ke snímku
+23. 8. (59 678 €) na celý měsíc (**94 535 €**) a přibyl rozpad na pracoviště.
+Červenec dá 100 475 € proti 100 474 € v reportu (rozdíl jsou W520 a PO455,
+které report neuvádí).
+
+**Rok se bere z nejnovějšího řádku a starší roky se přeskočí** — `MDET` je
+klíčovaný jen číslem měsíce, takže dva roky v jednom souboru by se sečetly.
+
+### Když scrap a Sales nejsou ke stejnému datu
+
+`salesStale(k)` v `js/core/month.js`: měsíc má zaškrtnuté **Sales jen ke
+snímku** (`part`), ale podle kalendáře už skončil. Scrap se pak sčítá za celý
+měsíc a Sales jsou jen k datu exportu — procento vyjde nesmyslně vysoké.
+
+Nastalo to hned, jak `MDET` začal chodit z importu: srpen měl scrap 94 535 €
+proti Sales 7 711 715 € k 23. 8., z čehož vycházelo 1,23 % místo skutečnosti.
+
+Takový měsíc **nemá porovnání s cílem** — Přehled scrapu místo něj napíše, co
+je špatně a co doplnit, a `yearRows()` ho vynechá z kumulativu, aby ho jedno
+nesourodé číslo nerozhodilo. Příznak se zapíná a vypíná zaškrtávátkem
+v Nastavení (`setPart`); dřív se dal nastavit jen v kódu.
+
 ### Den po dni
 
 Počítá `js/core/daily.js`, ukazuje záložka **Přehled scrapu**.
@@ -320,14 +363,15 @@ V týdenním režimu se pracoviště k vadě přiřazuje **přesně přes `lr`**
 `lokace¶kód§popis`), zatímco měsíční `P` se klíčuje jen popisem vady — týdenní
 rozpad na pracoviště je proto přesnější.
 
-`rsnMonths()` vrací jen měsíce, které rozpad na vady **opravdu mají**. Srpen má
-zatím jen projektové součty (z `AUG`), takže se do trendu nepočítá — jinak by
-každá vada vypadala jako vyřešená. V UI je na to výstražný pruh.
+`rsnMonths()` vrací jen měsíce, které rozpad na vady **opravdu mají** — bez
+nahraného exportu to platí pro srpen, který má z `AUG` jen projektové součty.
+Jinak by každá vada vypadala jako vyřešená. V UI je na to výstražný pruh.
 
 **Nedokončené období do trendu nevstupuje.** Týden, ke kterému nejsou nahrané
 dny až do neděle, má `part:true` — v grafu je (dutým bodem) a v tabulce se
 štítkem, ale `rsnTrend()` ho vyfiltruje. Bez toho by useknutý týden vypadal
-jako zlepšení.
+jako zlepšení. **Totéž platí pro probíhající kalendářní měsíc** (`k>=curKey()`):
+pár dnů září by po importu vypadalo jako vyřešená vada.
 
 Zařazení trendu porovnává poslední třetinu měsíců s tou předchozí:
 
@@ -487,7 +531,14 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 
 - [x] Rozdělit `index.html` — hotovo, kód je v `css/` a `js/`
 - [x] Targety a Sales z QAD exportu — načítá `js/import/target-parser.js` při importu
-- [ ] Skript, který z QAD exportu vygeneruje i `MDET` a historii místo ručního přepisování
-- [ ] Vyplnit `js/data/firebase-config.js` a zapnout sdílení podle `FIREBASE.md`
-- [ ] Doplnit srpnový QAD export → rozpad pracovišť za srpen
-- [ ] Ověřit červnovou tabulku, která nesedí s QAD (G463 M 6 269 € vs 51 538 €)
+- [x] `MDET` z QAD exportu — staví ho `js/import/mdet-parser.js`, ruční přepisování odpadlo
+- [x] Sdílení dat přes Firebase — zapnuté, konfigurace v `js/data/firebase-config.js`
+- [x] Srpnový rozpad pracovišť — přijde s exportem, ruční `AUG` slouží už jen jako záloha
+- [x] Červnová tabulka ověřena — `MDET` i `MONTHLY` mají G463 M **51 538 €** a přesně
+      to dá i QAD soubor. Poznámka o 6 269 € byla zastaralá.
+- [ ] Doplnit skutečné Sales za srpen (v Nastavení je pořád snímek k 23. 8.)
+- [ ] Rozhodnout, co s projektem `G463` — jeden řádek za 700 € v dubnu, evidentně
+      překlep v `Group 2` místo `G463 M`. Data se nemění bez zdroje, takže zatím
+      zůstává jako samostatný projekt.
+- [ ] Historii QLR (`LBL`, `QW`, `EO`, …) pořád přepisovat ručně — export ji nemá
+      celou (chybí zákaznické reklamace)

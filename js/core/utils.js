@@ -14,6 +14,8 @@ const fN=v=>Math.round(v||0).toLocaleString('cs-CZ');
 /* drobné částky s haléři — u ceny na kus je 0 € k ničemu */
 const fEs=v=>Math.abs(v||0)<10?(v||0).toFixed(2).replace('.',',')+' €':fE(v);
 const f3=v=>v==null?'—':v.toFixed(3)+'%';
+/* česká čísla se skloňují — 1 měsíc, 2 měsíce, 5 měsíců */
+const plM=n=>n+' '+(n===1?'měsíc':(n>=2&&n<=4?'měsíce':'měsíců'));
 const esc=s=>String(s).replace(/'/g,"\\'");
 /* escape do HTML — u textu, který přišel zvenku (e-mail, hláška z Firebase) */
 const escH=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')

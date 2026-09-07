@@ -28,3 +28,19 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}
 const saveS=()=>{try{localStorage.setItem(SKEY,JSON.stringify(SET))}catch(e){}cloudCfg()};
 const saveR=()=>{try{localStorage.setItem(RKEY,JSON.stringify(RW))}
   catch(e){toast('Nepodařilo se uložit rework: '+e.message,'#C0392B')}cloudSync()};
+
+/* Měsíční rozpad z importu. Leží nad tím, co je zapsané v kódu
+   (js/data/monthly-detail.js), aby se dalo poznat, co odkud je — a aby
+   ten, kdo si nic nenahrál, pořád viděl aspoň zapsaný základ. */
+let MDETI={};
+try{MDETI=JSON.parse(localStorage.getItem('yf_mdet')||'{}')}catch(e){MDETI={}}
+/* nedotčený základ — bez něj by po smazání měsíce ze sdílených dat zůstal
+   v paměti překlopený rozpad a nešlo by se vrátit k tomu, co je v kódu */
+const MDET0=JSON.parse(JSON.stringify(MDET));
+const mdetApply=()=>{
+  Object.keys(MDET).forEach(m=>{delete MDET[m]});
+  Object.assign(MDET,JSON.parse(JSON.stringify(MDET0)));
+  Object.keys(MDETI).forEach(m=>{if(MDETI[m]&&MDETI[m].d)MDET[m]=MDETI[m].d})};
+const saveM=()=>{try{localStorage.setItem('yf_mdet',JSON.stringify(MDETI))}
+  catch(e){toast('Nepodařilo se uložit měsíční rozpad: '+e.message,'#C0392B')}cloudSync()};
+mdetApply();
