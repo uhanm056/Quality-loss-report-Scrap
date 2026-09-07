@@ -19,6 +19,10 @@ const cloudCfg=()=>{if(window.cfgPush)cfgPush()};
 const saveT=()=>{try{localStorage.setItem('yf_tgtm',JSON.stringify(TGTM))}catch(e){}
   cloudCfg()};
 try{const p=JSON.parse(localStorage.getItem('yf_ptgtm')||'null');if(p)PTGTM=Object.assign(PTGTM,p)}catch(e){}
+try{const p=JSON.parse(localStorage.getItem('yf_psal')||'null');if(p)Object.assign(PSAL,p)}catch(e){}
+/* targety a Sales projektů — ukládají se spolu, chodí ze stejného zdroje */
+const saveP=()=>{try{localStorage.setItem('yf_ptgtm',JSON.stringify(PTGTM));
+  localStorage.setItem('yf_psal',JSON.stringify(PSAL))}catch(e){}cloudCfg()};
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}
   catch(e){toast('Nepodařilo se uložit: '+e.message,'#C0392B')}cloudSync()};
 const saveS=()=>{try{localStorage.setItem(SKEY,JSON.stringify(SET))}catch(e){}cloudCfg()};

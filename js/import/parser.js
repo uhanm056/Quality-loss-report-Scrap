@@ -68,19 +68,33 @@ function parseWB(wb){
 
 function handleFiles(list){
   const files=[...list];if(!files.length)return;
-  let done=0,add=0,rep=0;const errs=[];
+  let done=0,add=0,rep=0;const errs=[],tg={months:0,sales:null,snap:null,stale:[]};
   files.forEach(f=>{const rd=new FileReader();
     rd.onload=e=>{
       try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
         const res=parseWB(wb);
         Object.entries(res.days).forEach(([k,v])=>{if(DB[k])rep++;else add++;
-          DB[k]=Object.assign(v,{src:f.name,at:new Date().toISOString()})})}
+          DB[k]=Object.assign(v,{src:f.name,at:new Date().toISOString()})});
+        /* Ve stejném souboru bývá i workplan a Sales — když tam jsou, doplní se.
+           Bez nich by se cíl v EUR musel v Nastavení přepisovat ručně. */
+        try{const t=applyTgt(wb,res.days);
+          if(t.months)tg.months+=t.months;
+          if(t.sales){tg.sales=t.sales;tg.snap=t.snap}
+          t.stale.forEach(k=>{if(tg.stale.indexOf(k)<0)tg.stale.push(k)})}
+        catch(err){errs.push(f.name+' (targety): '+err.message)}}
       catch(err){errs.push(f.name+': '+err.message)}
       if(++done===files.length){save();
         const ks=Object.keys(DB).sort();if(ks.length)curMonth=ks[ks.length-1].slice(0,7);
-        renderBar();renderDash();renderDays();
+        renderBar();renderDash();renderDays();renderTgt();renderQ();
         if(errs.length)toast('⚠ '+errs.join(' | '),'#C0392B');
-        else toast('✓ Načteno '+add+' nových dnů'+(rep?', '+rep+' přepsáno':''),'#27AE60')}};
+        else if(tg.stale.length)toast('✓ Načteno '+add+' nových dnů'+
+          (tg.months?' · targety pro '+tg.months+' měsíců':'')+
+          (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):'')+
+          ' ⚠ '+tg.stale.map(mLabel).join(', ')+' už má data za celý měsíc, ale Sales '+
+          'v Nastavení jsou jen ze snímku — doplňte je z měsíčního reportu.','#E8A020')
+        else toast('✓ Načteno '+add+' nových dnů'+(rep?', '+rep+' přepsáno':'')+
+          (tg.months?' · targety z workplanu pro '+tg.months+' měsíců':'')+
+          (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):''),'#27AE60')}};
     rd.readAsArrayBuffer(f)})}
 const dz=document.getElementById('dropZone'),fi=document.getElementById('fileIn');
 dz.onclick=()=>fi.click();fi.onchange=()=>{handleFiles(fi.files);fi.value=''};

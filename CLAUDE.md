@@ -65,6 +65,23 @@ proto se hledají **podle názvu, ne podle pozice**:
 **Autoritativní zdroj je list `Target` v QAD exportu** — obsahuje workplan
 s cíli pro každý projekt a každý měsíc. Hodnoty jsou desetinné (0.008936 = 0,8936 %).
 
+**Načítá se automaticky** při importu reportu — `js/import/target-parser.js`.
+List má **dva bloky nad sebou**, oba se stejnou stavbou (řádek na projekt, dole
+souhrn `Target 2026`):
+
+| blok | účet v hlavičce | kam jde |
+|---|---|---|
+| první | `641250` | `TGTM[…].t` a `PTGTM[…][projekt][0]` |
+| druhý | `641250+641260` | `TGTM[…].ci` a `PTGTM[…][projekt][1]` — přísnější cíl s CI tasky |
+
+Blok s CI se pozná podle účtu se sčítáním, ne podle pořadí. Nula znamená
+„projekt v tom měsíci ještě neběží" a zapisuje se jako chybějící hodnota.
+Názvy projektů se berou před `" - "` a překládají se na tvar, který používá
+aplikace: `G463M` → `G463 M`, `OV51_52` → `OV51/52`, `SK336_1` → `SK336/1`.
+
+Ověřeno na reálném exportu: červen 0,8985 %, červenec 0,8029 % a k němu CI
+0,5625 %, X540 v červenci 0,3666 % — sedí na dosud ručně zapsané hodnoty.
+
 Ostatní zdroje NEPOUŽÍVAT jako primární:
 
 - List `overview mng` má řádek „scrap target : 0,90%" — zaokrouhlené, jen ke kontrole.
@@ -94,6 +111,17 @@ Takto ověřeno:
 
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
+
+**Sales se z tohohle listu načítají automaticky** (`parseSalesSheet`). V sekcích
+`without tests` i `with tests` je u každého projektu EUR i procento, takže
+`Sales = EUR / procento`. Obě sekce dávají shodný výsledek; `with tests` má víc
+projektů, protože obsahuje i ty s nulovým scrapem w/o tests.
+
+**Je to snímek k datu exportu, ne celý měsíc.** Zapisuje se proto jen k měsíci,
+ke kterému v souboru končí data, uzavřený měsíc se snímkem nikdy nepřepíše
+a neúplný měsíc se označí `part`. Když je nějaký dřívější měsíc v datech už
+kompletní, ale v Nastavení má pořád snímkové Sales, import na to upozorní —
+cíl v EUR by se počítal z menšího obratu.
 
 ---
 
@@ -180,6 +208,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/views/cloud.js` | panel Sdílení dat v záložce 5 |
 | `js/import/parser.js` | čtení denních `.xlsx` reportů |
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
+| `js/import/target-parser.js` | čtení workplanu a Sales ze stejného souboru — listy `Target` a `overview mng` |
 | `js/main.js` | start aplikace |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
@@ -196,7 +225,8 @@ Funkce volané z HTML atributů (`onclick`, `onchange`) se přiřazují jako
 `window.nazev = ...`, aby zůstaly dostupné bez ohledu na to, ve kterém souboru jsou.
 
 Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`),
-rework v `yf_rework_daily_v1`. Targety v `yf_tgtm` a `yf_ptgtm`, nastavení
+rework v `yf_rework_daily_v1`. Targety v `yf_tgtm` a `yf_ptgtm`, Sales projektů v `yf_psal`
+(ukládá je `saveP()` spolu s `PTGTM` — chodí ze stejného zdroje), nastavení
 v `yf_scrap_set_v1`. Záloha v záložce Data & import bere scrap i rework
 a **slučuje se, nepřepisuje** — dřív `DB=j.db` smazalo dny, které v záloze nebyly.
 
@@ -396,7 +426,7 @@ Uložení ve Firestore:
 ```
 plant1032/scrap/dny/{den}     jeden den scrapu
 plant1032/rework/dny/{den}    jeden den reworku
-plant1032/konfig              TGTM, PTGTM, SET
+plant1032/konfig              TGTM, PTGTM, PSAL, SET
 ```
 
 **Obsah dne je uložený jako text v poli `json`, ne jako vnořený objekt.** Klíče
@@ -451,7 +481,8 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 ## Co je potřeba udělat
 
 - [x] Rozdělit `index.html` — hotovo, kód je v `css/` a `js/`
-- [ ] Skript, který z QAD exportu vygeneruje datové bloky místo ručního přepisování
+- [x] Targety a Sales z QAD exportu — načítá `js/import/target-parser.js` při importu
+- [ ] Skript, který z QAD exportu vygeneruje i `MDET` a historii místo ručního přepisování
 - [ ] Vyplnit `js/data/firebase-config.js` a zapnout sdílení podle `FIREBASE.md`
 - [ ] Doplnit srpnový QAD export → rozpad pracovišť za srpen
 - [ ] Ověřit červnovou tabulku, která nesedí s QAD (G463 M 6 269 € vs 51 538 €)
