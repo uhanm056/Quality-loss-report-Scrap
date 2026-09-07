@@ -91,8 +91,8 @@ Ostatní zdroje NEPOUŽÍVAT jako primární:
 Targety se mění **každý měsíc** a **pro každý projekt zvlášť**:
 X540 měl v červenci 0,37 %, v srpnu 0,63 %. W206 z 1,06 % na 0,58 %.
 
-Srpen 2026 má nový workplan, který v listu `Target` (červnový export) ještě není —
-hodnoty pocházejí ze screenshotu scrap reportu.
+Srpnový workplan byl dřív jen ze screenshotu scrap reportu (0,86 / 0,54 %);
+srpnový export ho má přesně — **0,8604 % a 0,5353 %**.
 
 ---
 
@@ -107,7 +107,7 @@ Takto ověřeno:
 |---|---|---|---|---|---|
 | červen 26 | 102 357 | 0,571 % | 197 232 | 17 927 513 | 0,8985 % |
 | červenec 26 | 100 474 | 0,603 % | 246 160 | 16 660 896 | 0,8029 % |
-| srpen 26 (k 23. 8.) | 59 678 | 0,774 % | — | 7 711 715 | 0,86 % |
+| srpen 26 | 94 527 | 0,736 % | — | 12 835 650 | 0,8604 % |
 
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
@@ -303,8 +303,8 @@ měsíce z měsíčního exportu.
 Ověřeno proti reálnému exportu: měsíce 1–7 vyšly **na euro stejně** jako
 dosud zapsaný základ, srpen se opravil z projektových součtů ke snímku
 23. 8. (59 678 €) na celý měsíc (**94 535 €**) a přibyl rozpad na pracoviště.
-Červenec dá 100 475 € proti 100 474 € v reportu (rozdíl jsou W520 a PO455,
-které report neuvádí).
+Červenec dá 100 475 € proti 100 474 € v reportu, srpen 94 535 € proti
+94 527 € — rozdíl jsou pokaždé W520 a PO455, které report neuvádí.
 
 **Rok se bere z nejnovějšího řádku a starší roky se přeskočí** — `MDET` je
 klíčovaný jen číslem měsíce, takže dva roky v jednom souboru by se sečetly.
@@ -536,7 +536,8 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 - [x] Srpnový rozpad pracovišť — přijde s exportem, ruční `AUG` slouží už jen jako záloha
 - [x] Červnová tabulka ověřena — `MDET` i `MONTHLY` mají G463 M **51 538 €** a přesně
       to dá i QAD soubor. Poznámka o 6 269 € byla zastaralá.
-- [ ] Doplnit skutečné Sales za srpen (v Nastavení je pořád snímek k 23. 8.)
+- [x] Skutečné Sales za srpen — **12 835 650 €** ze srpnového exportu,
+      snímek k 23. 8. (7 711 715 €) byl skoro o polovinu nižší
 - [ ] Rozhodnout, co s projektem `G463` — jeden řádek za 700 € v dubnu, evidentně
       překlep v `Group 2` místo `G463 M`. Data se nemění bez zdroje, takže zatím
       zůstává jako samostatný projekt.
