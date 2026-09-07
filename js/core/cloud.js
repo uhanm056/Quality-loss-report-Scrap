@@ -254,7 +254,7 @@ window.cfgPush=()=>{
   try{CFGAT=new Date().toISOString();localStorage.setItem('yf_cfg_at',CFGAT)}catch(e){}
   if(CLOUD.sts!=='on')return;
   cKonf().set({at:CFGAT,by:CLOUD.user||'',
-    json:JSON.stringify({TGTM:TGTM,PTGTM:PTGTM,SET:SET})}).catch(cloudErr)};
+    json:JSON.stringify({TGTM:TGTM,PTGTM:PTGTM,PSAL:PSAL,SET:SET})}).catch(cloudErr)};
 
 function cfgPull(d){
   if(!d.exists){if(CLOUD.sts==='on'&&CFGAT)cfgPush();return}
@@ -263,11 +263,11 @@ function cfgPull(d){
   if(!j)return;
   if(j.TGTM)Object.assign(TGTM,j.TGTM);
   if(j.PTGTM)Object.assign(PTGTM,j.PTGTM);
+  if(j.PSAL)Object.assign(PSAL,j.PSAL);
   if(j.SET)Object.assign(SET,j.SET);
   CFGAT=at;try{localStorage.setItem('yf_cfg_at',CFGAT)}catch(e){}
   CLOUD.applying=true;
-  saveT();try{localStorage.setItem('yf_ptgtm',JSON.stringify(PTGTM))}catch(e){}
-  saveS();
+  saveT();saveP();saveS();
   CLOUD.applying=false;
   document.getElementById('sRwTgt').value=SET.rwTarget;
   document.getElementById('sRwRate').value=SET.rwRate;

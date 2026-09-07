@@ -11,7 +11,8 @@ function renderTgt(){
     '<th class="num">Cíl v EUR</th><th></th></tr></thead><tbody>'+
     ks.map(function(k){const o=TGTM[k],mm=+k.slice(5,7);
       const eur=(o.t&&o.sales)?Math.round(o.t/100*o.sales):null;
-      return '<tr'+(o.part?' style="background:#FEF9E7"':'')+'><td><b>'+MN[mm-1]+' '+k.slice(0,4)+'</b>'+
+      return '<tr id="tgr_'+k+'"'+(o.part?' style="background:#FEF9E7"':'')+
+      '><td><b>'+MN[mm-1]+' '+k.slice(0,4)+'</b>'+
       (o.part?' <span class="tag n">probíhá</span>':'')+'</td>'+
       '<td class="num"><input class="inp" style="width:88px" type="number" step="0.01" value="'+
         (o.t!=null?o.t:'')+'" onchange="setTgt(\''+k+'\',\'t\',this.value)"></td>'+
@@ -45,8 +46,7 @@ function renderTgt(){
     'Pro měsíc bez vlastních hodnot se použije poslední dřívější měsíc.</div>'}
 window.setPT=(k,n,i,v)=>{PTGTM[k]=PTGTM[k]||{};PTGTM[k][n]=PTGTM[k][n]||[null,null];
   PTGTM[k][n][i]=v===''?null:+v;
-  try{localStorage.setItem('yf_ptgtm',JSON.stringify(PTGTM))}catch(e){}
-  cloudCfg();
+  saveP();
   if(qSub===0)renderTop();toast('✓ Uloženo.','#27AE60')};
 window.setTgt=(k,f,v)=>{TGTM[k]=TGTM[k]||{};
   TGTM[k][f]=v===''?null:(f==='sales'?Math.round(+v):+v);saveT();
@@ -58,3 +58,20 @@ window.addTgt=()=>{const v=(document.getElementById('ntM').value||'').trim();
 window.setPTgt=(n,f,v)=>{PTGT[n]=PTGT[n]||{};PTGT[n][f]=v===''?null:+v;
   try{localStorage.setItem('yf_ptgt',JSON.stringify(PTGT))}catch(e){}
   if(qSub===0)renderTop();toast('✓ Uloženo.','#27AE60')};
+
+/* Proklik z výstražného pruhu „Chybí target" v Přehledu scrapu.
+   Otevře Nastavení a nachystá přesně ten měsíc, který chybí — buď doskočí
+   na jeho řádek, nebo předvyplní pole pro přidání měsíce. */
+window.openTgt=k=>{
+  curTab=7;
+  document.querySelectorAll('.view').forEach((v,j)=>v.classList.toggle('on',j===7));
+  document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('on',j===7));
+  renderBar();renderTgt();
+  const row=document.getElementById('tgr_'+k);
+  if(row){row.classList.add('hi');
+    row.scrollIntoView({behavior:'smooth',block:'center'});
+    const inp=row.querySelector('input');if(inp){inp.focus();inp.select()}
+    return}
+  const nm=document.getElementById('ntM');
+  if(nm){nm.value=k;nm.scrollIntoView({behavior:'smooth',block:'center'});nm.focus()}
+  toast('Měsíc '+k+' v tabulce ještě není — dej „+ přidat".','#E8A020')};
