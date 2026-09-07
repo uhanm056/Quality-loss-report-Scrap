@@ -15,8 +15,12 @@ function dashMonth(R){
   const near=R.pb!=null&&!over&&R.pb>-0.05;
   let cls,ic,hd,tx;
   if(R.pct==null||R.target==null){cls='warn';ic='📋';hd='Chybí target nebo Sales';
+    /* Targety se z QAD exportu nečtou — parser bere jen řádky se scrapem.
+       Proto rovnou proklik tam, kde se zadávají, ať se nemusí hledat. */
     tx='Pro '+R.label+' není v Nastavení zadaný target v % nebo Sales za měsíc. '+
-      'Doplňte je a dopočítá se cíl v EUR i porovnání.'}
+      'Z reportu se nenačítají — zadávají se ručně z listu <b>Target</b>. '+
+      '<button class="btn" style="margin-left:6px" onclick="openTgt(\''+R.key+'\')">'+
+      '⚙️ Doplnit v Nastavení</button>'}
   else if(over){cls='bad';ic='⛔';hd='Jsme nad cílem';
     tx='Skutečnost <b>'+R.pct.toFixed(3)+' %</b> ze Sales proti cíli <b>'+R.target.toFixed(2)+' %</b> — '+
       '<b>'+R.pb.toFixed(2)+' p.b. nad</b>. Do cíle chybí ušetřit <b>'+fE(-R.rez)+'</b>.'}
