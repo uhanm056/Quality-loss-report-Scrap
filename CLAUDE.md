@@ -112,10 +112,15 @@ Takto ověřeno:
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
 
-**Sales se z tohohle listu načítají automaticky** (`parseSalesSheet`). V sekcích
-`without tests` i `with tests` je u každého projektu EUR i procento, takže
-`Sales = EUR / procento`. Obě sekce dávají shodný výsledek; `with tests` má víc
-projektů, protože obsahuje i ty s nulovým scrapem w/o tests.
+**Sales se načítají automaticky, primárně z listu `Pivot`** (`parseSalesSheet`),
+kde stojí přímo ve sloupci `Sales EUR` a nad blokem je i číslo měsíce
+(`Month | 9`). Bloků je víc a Sales v nich sedí na cent — čtou se ze všech
+a slučují, protože každý obsahuje jiné projekty: W206 s nulovým scrapem
+w/o tests je jen v tom druhém.
+
+Když by `Pivot` chyběl, spočítají se z tohohle listu jako `EUR / procento`
+(v sekcích `without tests` i `with tests` je obojí u každého projektu).
+Na reálném exportu dá obojí stejné číslo — 3 605 637 €.
 
 **Je to snímek k datu exportu, ne celý měsíc.** Zapisuje se proto jen k měsíci,
 ke kterému v souboru končí data, uzavřený měsíc se snímkem nikdy nepřepíše

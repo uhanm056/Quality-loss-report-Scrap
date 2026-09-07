@@ -8,12 +8,20 @@
    (0.008936 = 0,8936 %), takže se násobí stem — v aplikaci jsou targety
    v procentech.
 
-   List `overview mng` — Sales. Přímo tam nejsou, ale v sekcích
-   `without tests` a `with tests` je u každého projektu EUR i procento
-   ze Sales, takže Sales = EUR / procento. Obě sekce dávají stejný výsledek;
-   `with tests` má víc projektů (obsahuje i ty s nulovým scrapem w/o tests).
-   Jde o **snímek k datu exportu**, ne o celý měsíc — proto se zapisuje jen
-   k měsíci, který v souboru probíhá, a nikdy nepřepíše uzavřený měsíc.
+   List `Pivot` — Sales. Jsou tam přímo ve sloupci `Sales EUR`, u každého
+   projektu, a nad blokem je i číslo měsíce (`Month | 9`). Bloků je víc
+   (w/o tests, all scrap) a Sales v nich sedí na cent — čtou se ze všech
+   a slučují, protože každý blok obsahuje jiné projekty: W206 s nulovým
+   scrapem w/o tests je jen v tom druhém.
+
+   List `overview mng` — záloha, když by `Pivot` chyběl. Sales tam přímo
+   nejsou, ale u každého projektu je EUR i procento ze Sales, takže
+   Sales = EUR / procento. Na reálném exportu dá obojí stejné číslo
+   (3 605 637 €).
+
+   Sales jsou v obou případech **snímek k datu exportu**, ne celý měsíc —
+   proto se zapisují jen k měsíci, který v souboru probíhá, a nikdy
+   nepřepíšou uzavřený měsíc.
 
    Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
@@ -91,10 +99,32 @@ function parseTgtSheet(wb){
     const o=out.proj[k]=out.proj[k]||{};o[p]=o[p]||[null,null];o[p][1]=v}));
   return out}
 
-/* ── list overview mng → Sales ─────────────────────────────────────────── */
+/* ── Sales ─────────────────────────────────────────────────────────────── */
 
-/* {total, proj:{'G463 M':1629743}} — Sales = EUR / procento ze Sales */
-function parseSalesSheet(wb){
+const isTot=l=>/^(total|celkov)/i.test(l);
+
+/* list Pivot — Sales jsou přímo ve sloupci `Sales EUR` */
+function salesFromPivot(wb){
+  const rows=shOf(wb,/^\s*pivot\s*$/i);
+  if(!rows)return null;
+  const proj={};let total=null,month=null;
+  for(let r=0;r<rows.length;r++){
+    const row=rows[r]||[];
+    /* číslo měsíce stojí nad bloky jako `Month | 9` */
+    if(/^month$/i.test(String(row[0]||'').trim())){const m=+row[1];
+      if(m>=1&&m<=12)month=m}
+    const col=row.findIndex(c=>/^\s*sales\s*eur\s*$/i.test(String(c||'')));
+    if(col<0)continue;
+    for(let i=r+1;i<rows.length;i++){
+      const x=rows[i]||[],lbl=String(x[0]==null?'':x[0]).trim();
+      if(!lbl)break;
+      const v=x[col];const s=(typeof v==='number'&&v>0)?Math.round(v):null;
+      if(isTot(lbl)){if(s&&total==null)total=s;break}
+      if(s&&proj[lbl]==null)proj[lbl]=s}}
+  return (total||Object.keys(proj).length)?{total:total,proj:proj,month:month}:null}
+
+/* list overview mng — záloha: Sales = EUR / procento ze Sales */
+function salesFromOverview(wb){
   const rows=shOf(wb,/overview\s*mng/i);
   if(!rows)return null;
   const proj={};let total=null;
@@ -106,9 +136,11 @@ function parseSalesSheet(wb){
       const eur=row[1],pct=row[2];
       const s=(typeof eur==='number'&&typeof pct==='number'&&eur>0&&pct>0)
         ?Math.round(eur/pct):null;
-      if(/^total$/i.test(lbl)){if(s&&total==null)total=s;break}
+      if(isTot(lbl)){if(s&&total==null)total=s;break}
       if(s&&proj[lbl]==null)proj[lbl]=s}}
-  return (total||Object.keys(proj).length)?{total:total,proj:proj}:null}
+  return (total||Object.keys(proj).length)?{total:total,proj:proj,month:null}:null}
+
+const parseSalesSheet=wb=>salesFromPivot(wb)||salesFromOverview(wb);
 
 /* ── zápis do aplikace ─────────────────────────────────────────────────── */
 
@@ -132,11 +164,15 @@ function applyTgt(wb,days){
         const cur=o[p]||[null,null];
         o[p]=[v[0]!=null?v[0]:cur[0],v[1]!=null?v[1]:cur[1]];res.proj++})})}
 
-  /* měsíc snímku = poslední měsíc, ke kterému jsou v souboru data */
+  /* Měsíc snímku: rok vždycky z dat, měsíc z Pivotu, když ho uvádí — jinak
+     taky z dat. Bez toho by se Sales přiřadily špatně u souboru, kde poslední
+     řádek se scrapem spadne do jiného měsíce, než za který je souhrn. */
   const ks=Object.keys(days||{}).sort();
-  const snap=ks.length?ks[ks.length-1].slice(0,7):null;
+  let snap=ks.length?ks[ks.length-1].slice(0,7):null;
+  if(snap&&sal&&sal.month)snap=ks[ks.length-1].slice(0,4)+'-'+String(sal.month).padStart(2,'0');
   if(sal&&snap){
-    const last=+ks[ks.length-1].slice(8),dim=daysInMonth(snap);
+    const dd=ks.filter(x=>x.startsWith(snap));
+    const last=dd.length?+dd[dd.length-1].slice(8):0,dim=daysInMonth(snap);
     const part=last<dim;
     const o=TGTM[snap]=TGTM[snap]||{};
     /* uzavřený měsíc má Sales za celý měsíc — snímkem by se pokazily */
