@@ -216,12 +216,19 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/target-parser.js` | čtení workplanu a Sales ze stejného souboru — listy `Target` a `overview mng` |
 | `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
 | `js/main.js` | start aplikace |
+| `tools/bundle.py` | slepí aplikaci do jednoho HTML na poslání e-mailem — nepovinné, aplikace build nepotřebuje |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
 prohlížeč nechá starý soubor: když se změní jen něco v `js/`, `index.html`
 zůstane stejný a nová verze se vůbec nestáhne. **Při každé změně v `css/`
 nebo `js/` proto zvedni `?v=` u všech odkazů** — jinak uživatel uvidí starou
 aplikaci a bude si myslet, že se nic nestalo.
+
+**Jednosouborová verze** (`python3 tools/bundle.py`) je jen na poslání e-mailem
+nebo na flashku — vloží `css/` a `js/` dovnitř `index.html`. Sdílení dat v ní
+nejede (`file://`) a grafy pořád potřebují CDN. Je to zmražená kopie, `.gitignore`
+ji drží mimo repozitář a po každé změně v `css/` nebo `js/` se musí vygenerovat
+znovu. Aplikace samotná **žádný build nepotřebuje**.
 
 **Pořadí skriptů v `index.html` je závazné:** data → jádro → záložky → import →
 start. `js/main.js` musí zůstat poslední — spouští první vykreslení. Nové soubory
