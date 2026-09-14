@@ -6,6 +6,9 @@ Quality_loss_report*.xlsx
 # zálohy dat z aplikace
 scrap_zaloha_*.json
 
+# jednosouborová verze — generuje ji tools/bundle.py, v repozitáři by zestarala
+Scrap_QLR_Plant1032.html
+
 # dočasné soubory
 ~$*
 *.tmp

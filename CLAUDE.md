@@ -108,6 +108,12 @@ Takto ověřeno:
 | červen 26 | 102 357 | 0,571 % | 197 232 | 17 927 513 | 0,8985 % |
 | červenec 26 | 100 474 | 0,603 % | 246 160 | 16 660 896 | 0,8029 % |
 | srpen 26 | 94 527 | 0,736 % | — | 12 835 650 | 0,8604 % |
+| září 26 (k 13. 9.) | 39 935 | 0,532 % | — | 7 512 959 | 0,8716 % |
+
+**Pozor při srovnávání s Excelem.** Blok `Monthly Total scrap costs` v Pivotu
+má `Excluded? = (Vše)`, takže obsahuje i testovací a nájezdové díly — za září
+k 13. 9. dá **76 115 €** proti 39 935 € w/o tests. Aplikace ukazuje w/o tests;
+ten rozdíl **nejsou** chybějící data.
 
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
@@ -216,12 +222,19 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/target-parser.js` | čtení workplanu a Sales ze stejného souboru — listy `Target` a `overview mng` |
 | `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
 | `js/main.js` | start aplikace |
+| `tools/bundle.py` | slepí aplikaci do jednoho HTML na poslání e-mailem — nepovinné, aplikace build nepotřebuje |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
 prohlížeč nechá starý soubor: když se změní jen něco v `js/`, `index.html`
 zůstane stejný a nová verze se vůbec nestáhne. **Při každé změně v `css/`
 nebo `js/` proto zvedni `?v=` u všech odkazů** — jinak uživatel uvidí starou
 aplikaci a bude si myslet, že se nic nestalo.
+
+**Jednosouborová verze** (`python3 tools/bundle.py`) je jen na poslání e-mailem
+nebo na flashku — vloží `css/` a `js/` dovnitř `index.html`. Sdílení dat v ní
+nejede (`file://`) a grafy pořád potřebují CDN. Je to zmražená kopie, `.gitignore`
+ji drží mimo repozitář a po každé změně v `css/` nebo `js/` se musí vygenerovat
+znovu. Aplikace samotná **žádný build nepotřebuje**.
 
 **Pořadí skriptů v `index.html` je závazné:** data → jádro → záložky → import →
 start. `js/main.js` musí zůstat poslední — spouští první vykreslení. Nové soubory
@@ -322,6 +335,17 @@ Takový měsíc **nemá porovnání s cílem** — Přehled scrapu místo něj n
 je špatně a co doplnit, a `yearRows()` ho vynechá z kumulativu, aby ho jedno
 nesourodé číslo nerozhodilo. Příznak se zapíná a vypíná zaškrtávátkem
 v Nastavení (`setPart`); dřív se dal nastavit jen v kódu.
+
+**Nesourodý měsíc nesmí otrávit ani ty ostatní.** Vynechat ho z jeho vlastního
+panelu nestačí — následující měsíc se proti němu pořád porovnával. Září tak
+hlásilo „−0,69 p.b. proti srpnu 1,226 %", i když srpen je ve skutečnosti
+0,736 %. Proto:
+
+- `prevStale` — KPI **Trend proti minulému měsíci** místo čísla napíše,
+  že předchozí měsíc má Sales jen ke snímku a porovnat nejde
+- `soundSales(k)` — **Odhad celého měsíce** bere předpoklad z posledního
+  měsíce se Sales za **celý** měsíc, ne nutně z toho předchozího. Se snímkovými
+  srpnovými Sales (7 711 715 €) by odhad září spadl skoro na polovinu.
 
 ### Den po dni
 
