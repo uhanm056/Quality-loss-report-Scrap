@@ -3,6 +3,19 @@
    Součást aplikace Scrap & QLR — Yanfeng Plant 1032.
    Klasický skript (bez modulů), aby index.html fungoval otevřený přímo z disku. */
 
+/* Den v týdnu se píše k datu všude, kde se den ukazuje. Bez toho není poznat,
+   že „13.09.2026 371 €" je neděle, kdy se skoro nevyrábí, a porovnání s pátkem
+   nedává smysl. Navíc se v pondělí dělá součet pátek + sobota + neděle, takže
+   pondělní řádek v Excelu odpovídá třem dnům v aplikaci. */
+const DOW=['ne','po','út','st','čt','pá','so'];
+const DOWL=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
+const dowNum=k=>{const p=k.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getDay()};
+const dowOf=k=>DOW[dowNum(k)];
+/* V KPI kartách je popisek velkými písmeny a zkratka „NE" se čte jako „ne",
+   proto se tam píše celý název dne. V tabulce stačí zkratka. */
+const denLabel=k=>k.split('-').reverse().join('.')+' · '+DOWL[dowNum(k)];
+const jeVikend=k=>{const d=dowNum(k);return d===0||d===6};
+
 /* v čem se dny porovnávají: 'e' = EUR za den, 'q' = EUR na kus */
 let dayU='e',openDay=null;
 const dayEur=k=>(DB[k]||{}).eur||0;
