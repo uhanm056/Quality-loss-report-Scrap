@@ -65,8 +65,14 @@ function parseWB(wb){
     bump(P.l,lc,eur,q);bump(P.r,rk,eur,q);bump(P.lr,lc+'¶'+rk,eur,q);
     if(it)bump(P.it,it,eur,q);used++}
   if(!used)throw new Error('Nenašel jsem žádné použitelné řádky se scrapem.');
-  const trim=(m,n)=>{const o={};Object.entries(m).filter(([k,v])=>v.e>0.5)
-    .sort((a,b)=>b[1].e-a[1].e).slice(0,n).forEach(([k,v])=>o[k]={e:Math.round(v.e),q:Math.round(v.q)});return o};
+  /* Do rozpadu se vejde jen `n` největších položek. Rozhoduje **absolutní**
+     hodnota, ne kladná — QAD posílá i opravné řádky se záporným EUR a ty bývají
+     to největší, co se v ten den stalo. Dřív podmínka `v.e>0.5` zahodila celou
+     zápornou položku: 11. 9. mělo G463 M −8 559 €, ale v rozpadu zbylo jen
+     PCO001 849 € a IMM 82 €, takže součet položek neseděl na den. */
+  const trim=(m,n)=>{const o={};Object.entries(m).filter(([k,v])=>Math.abs(v.e)>0.5)
+    .sort((a,b)=>Math.abs(b[1].e)-Math.abs(a[1].e)).slice(0,n)
+    .forEach(([k,v])=>o[k]={e:Math.round(v.e),q:Math.round(v.q)});return o};
   Object.values(days).forEach(d=>{d.eur=Math.round(d.eur);d.qty=Math.round(d.qty);
     Object.values(d.p).forEach(P=>{P.e=Math.round(P.e);P.q=Math.round(P.q);
       P.l=trim(P.l,30);P.r=trim(P.r,40);P.lr=trim(P.lr,60);P.it=trim(P.it,20)})});

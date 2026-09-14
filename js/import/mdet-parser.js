@@ -69,7 +69,10 @@ function parseMdet(wb){
   if(!Object.keys(out).length)return null;
 
   /* do tvaru, ve kterém MDET žije: pole seřazená sestupně podle wt */
-  const top=(m,n)=>Object.entries(m).sort((a,b)=>b[1].wt-a[1].wt).slice(0,n);
+  /* řadí se podle absolutní hodnoty — opravné řádky mají záporné EUR a při
+     řazení podle kladné hodnoty by spadly na konec a vypadly ze seznamu */
+  const top=(m,n)=>Object.entries(m)
+    .sort((a,b)=>Math.abs(b[1].wt)-Math.abs(a[1].wt)).slice(0,n);
   const res={},cover={};
   Object.entries(out).forEach(([mo,ps])=>{
     cover[mo]=Object.keys(dny[mo]||{}).length;

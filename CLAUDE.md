@@ -115,6 +115,17 @@ má `Excluded? = (Vše)`, takže obsahuje i testovací a nájezdové díly — z
 k 13. 9. dá **76 115 €** proti 39 935 € w/o tests. Aplikace ukazuje w/o tests;
 ten rozdíl **nejsou** chybějící data.
 
+**Blok `Daily Scrap by location` není jeden den.** Filtr u něj hlásí
+`Effective Date = (Vše)`, ale uložené hodnoty pokrývají poslední **tři** dny —
+za zářijový export −5 643,04 € a −90 ks, což je 11. + 12. + 13. 9. dohromady
+(v aplikaci −6 365 + 351 + 371). Všech deset lokací sedí na cent. Než se začne
+hledat chyba, vždycky ověřit, kolik dnů ten pivot ve skutečnosti obsahuje.
+
+**Kusy v tom pivotu se počítají jinak než v aplikaci.** Pivot sčítá
+`Loc Qty Change` **se znaménkem** (−90 ks), aplikace `Quantity Change`
+v **absolutní hodnotě** (164 ks) — u „EUR na kus" jde o to, kolika kusů se to
+týkalo, takže storno se přičítá. V EUR je to shodné, v kusech ne.
+
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
 
@@ -155,6 +166,14 @@ zkreslil by trend. Sledováno v objektu `PART`.
 Podmínka `display: c => c.raw != null` je proto vždy nepravdivá a čísla ve sloupcích
 zmizí. Hodnota se bere přes `dlVal(c)` z `js/core/utils.js`. Popisky nad sloupcem
 (`anchor:'end'`) navíc nesmí být bílé — sedí na bílém pozadí, ne v grafu.
+
+**QAD posílá i opravné řádky se záporným EUR** a bývají to největší položky dne
+— 11. 9. 2026 mělo G463 M na ASY006 **−9 198 €** a celý den skončil na −6 365 €.
+Do rozpadu se vejde jen `n` největších položek a **rozhoduje absolutní hodnota**.
+Dřív podmínka `v.e>0.5` v `trim()` celou zápornou položku zahodila, takže součet
+položek neseděl na součet dne: z −8 559 € u G463 M zbylo v rozpadu 849 + 82 €.
+Totéž platí pro `top()` v `mdet-parser.js`. **Záporné EUR se nikdy nefiltruje** —
+jsou to opravy a bez nich nesedí ani měsíc (červenec 100 474 € vs 102 925 €).
 
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
@@ -223,6 +242,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
 | `js/main.js` | start aplikace |
 | `tools/bundle.py` | slepí aplikaci do jednoho HTML na poslání e-mailem — nepovinné, aplikace build nepotřebuje |
+| `.claude/skills/qlr-mesicni-report/` | postup na měsíční QLR report z QAD exportu — stejná metodika jako aplikace |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
 prohlížeč nechá starý soubor: když se změní jen něco v `js/`, `index.html`
@@ -530,6 +550,28 @@ nikdo. Zato tam musí být výčet konkrétních e-mailů: `apiKey` je veřejný
 při zapnutém sign-upu by si kdokoliv založil účet na vymyšlenou adresu z firemní
 domény. Proto se v konzoli vypíná **Authentication → Settings → Enable create
 (sign-up)**.
+
+### Skilla na měsíční QLR report
+
+`.claude/skills/qlr-mesicni-report/SKILL.md` popisuje, jak z QAD exportu udělat
+měsíční QLR report ručně (mimo aplikaci). **Metodika musí sedět s tím, co počítá
+aplikace** — když se změní filtr tady, musí se změnit i tam.
+
+Kopie je v repozitáři schválně: původní verze žila jen v `~/.claude/skills/synced/`,
+odkud ji může přepsat synchronizace. Tohle je ta verze, která platí.
+
+Při revizi se v ní opravily čtyři věci, všechny ověřené na reálném exportu:
+
+| bylo | je | proč |
+|---|---|---|
+| plošný filtr `EUR > 0` | jen u počtu kusů, nikdy u EUR | se zápornými řádky dá červenec 100 474 € (= report), s filtrem 102 925 € |
+| „testy = rozdíl obou" | rozdíl = **dodavatel (kód 20)** | srpen: 170 813 − 94 534 = 76 278 €, přesně kód 20. Testy jsou `Excluded? = YES` a stojí mimo obě čísla |
+| „po `Excluded? = NO` zbývá jen kód 20" | nesmí zbýt **žádný** z kódů v listu | kód 20 v tom seznamu vůbec není, je jen v poznámce vedle |
+| `QLR % = scrap / Sales` | `× 100`, z **with tests**, s varováním | v QAD nejsou zákaznické reklamace — červenec 198 043 € proti oficiálním 246 160 € |
+
+Navíc: datum brát z `Effective Date`, ne z `Date` (liší se na 206 řádcích
+z 38 755), a deduplikace přes `Transaction Number` má smysl jen při skládání
+víc exportů — uvnitř jednoho jsou duplicity nula.
 
 ## Jak pracovat s tímhle projektem
 
