@@ -115,11 +115,17 @@ má `Excluded? = (Vše)`, takže obsahuje i testovací a nájezdové díly — z
 k 13. 9. dá **76 115 €** proti 39 935 € w/o tests. Aplikace ukazuje w/o tests;
 ten rozdíl **nejsou** chybějící data.
 
-**Blok `Daily Scrap by location` není jeden den.** Filtr u něj hlásí
-`Effective Date = (Vše)`, ale uložené hodnoty pokrývají poslední **tři** dny —
-za zářijový export −5 643,04 € a −90 ks, což je 11. + 12. + 13. 9. dohromady
-(v aplikaci −6 365 + 351 + 371). Všech deset lokací sedí na cent. Než se začne
-hledat chyba, vždycky ověřit, kolik dnů ten pivot ve skutečnosti obsahuje.
+**V pondělí se dělá součet za pátek, sobotu a neděli.** Blok
+`Daily Scrap by location` proto v pondělním exportu **není jeden den, ale tři** —
+za ten zářijový dá −5 643,04 € a −90 ks, což je pátek 11. + sobota 12. +
+neděle 13. 9. dohromady (v aplikaci −6 365 + 351 + 371). Všech deset lokací sedí
+na cent. Aplikace dělí po kalendářních dnech, takže jeden pondělní řádek v Excelu
+odpovídá třem řádkům v tabulce den po dni — než se začne hledat chyba, vždycky
+ověřit, kolik dnů ten pivot obsahuje.
+
+Proto se **u každého data píše den v týdnu** (`denLabel`, `dowOf`
+v `js/core/daily.js`). Bez toho není poznat, že „13.09.2026 371 €" je neděle
+s dvanácti řádky, a porovnání s průměrem posledních sedmi dnů nedává smysl.
 
 **Kusy v tom pivotu se počítají jinak než v aplikaci.** Pivot sčítá
 `Loc Qty Change` **se znaménkem** (−90 ks), aplikace `Quantity Change`

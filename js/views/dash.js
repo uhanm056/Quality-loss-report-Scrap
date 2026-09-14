@@ -144,7 +144,7 @@ function dayColumn(ks,i,titul,prevR){
   const tot=dayEur(k),qty=dayQty(k),per=dayPer(k),projs=dayProjects(k);
   const top=dayBreak(k,'r').slice(0,3),mx=top.length?top[0][1].e:0;
   const cls=C.d==null?'b':(C.worse?'r':'g');
-  const den=k.split('-').reverse().join('.');
+  const den=denLabel(k);
   return '<div><div class="kpi '+cls+'">'+
     '<div class="kpi-l">'+titul+' · '+den+'</div>'+
     '<div class="kpi-v" style="font-size:34px">'+dayFmt(dayVal(k))+'</div>'+
@@ -228,7 +228,8 @@ function dashDays(m){
       /* den o čtvrtinu horší než průměr posledních dnů se obarví */
       const spatny=r.C.pct!=null&&r.C.pct>25;
       let out='<tr class="'+(op||spatny?'hi':'')+'">'+
-      '<td><b>'+r.k.split('-').reverse().join('.')+'</b></td>'+
+      '<td><b>'+r.k.split('-').reverse().join('.')+'</b>'+
+        '<span style="color:var(--muted);font-size:11px;margin-left:6px">'+dowOf(r.k)+'</span></td>'+
       '<td class="num"><b>'+dayFmt(r.v)+'</b></td>'+
       '<td class="num">'+(dP==null?'<span class="tag n">—</span>':
         '<span class="tag '+(dP>0?'r':(dP<0?'g':'n'))+'">'+(dP>0?'▲ +':(dP<0?'▼ ':''))+
@@ -278,14 +279,14 @@ function dashDaily(m,R){
   const warn=nd.length?'<div class="warnbox"><span style="font-size:26px">⚠️</span><div><b>'+
     nd.length+' '+(nd.length===1?'den nemá':'dnů nemá')+' uložený detail.</b> Byly načtené starší verzí. '+
     'Přetáhněte je znovu v záložce Data — rozpad na pracoviště a příčiny se doplní.<br>'+
-    '<span style="font-size:12px;opacity:.85">'+nd.map(k=>k.split('-').reverse().join('.')).join(', ')+
+    '<span style="font-size:12px;opacity:.85">'+nd.map(denLabel).join(', ')+
     '</span></div></div>':'';
   return warn+rid+
   '<div class="grid4">'+
   (function(){const w=ks.reduce((a,x)=>dayEur(x)>dayEur(a)?x:a,ks[0]),wt=dayTopDefect(w);
     return '<div class="kpi r"><div class="kpi-l">Nejhorší den měsíce</div>'+
     '<div class="kpi-v">'+fE(dayEur(w))+'</div>'+
-    '<div class="kpi-s">'+w.split('-').reverse().join('.')+
+    '<div class="kpi-s">'+denLabel(w)+
     (wt?' · '+wt.name+(wt.proj?' na '+wt.proj:''):'')+'</div></div>'})()+
   '<div class="kpi '+(allow!=null&&tot>allow?'r':'g')+'"><div class="kpi-l">'+
     (allow!=null?'Kumulace vs povolené tempo':'Kumulace za nahrané dny')+'</div>'+
