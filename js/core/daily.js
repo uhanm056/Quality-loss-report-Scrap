@@ -10,36 +10,80 @@
 const DOW=['ne','po','út','st','čt','pá','so'];
 const DOWL=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
 const dowNum=k=>{const p=k.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getDay()};
-const dowOf=k=>DOW[dowNum(k)];
+const dmy=k=>k.split('-').reverse().join('.');
+const jeVikend=k=>{const d=dowNum(k);return d===0||d===6};
+
+/* ── Pohled: po kalendářních dnech, nebo tak, jak chodí reporty z QAD ──
+   V pondělí se dělá jeden report za pátek, sobotu a neděli — jeden řádek
+   pivotu tedy odpovídá třem dnům v aplikaci. Pohled „po reportech" je slepí
+   do jedné jednotky, aby šlo číslo porovnat s Excelem jedna ku jedné.
+   DB zůstává klíčovaná kalendářními dny — ta jsou přesnější a na problem
+   solving se hodí. Slepuje se až při vykreslení.
+
+   Klíč jednotky jsou její dny spojené '+' ('2026-09-11+2026-09-12+…').
+   Kalendářní klíč '+' nikdy neobsahuje, takže se ty dva nedají zaměnit
+   a `dayEur('2026-09-11')` pořád vrací jen ten jeden den. */
+let dayG='d';
+/* kolik dnů zpátky leží pátek, do jehož reportu den spadá: pá 0, so 1, ne 2 */
+const REPB={5:0,6:1,0:2};
+function repAnchor(k){
+  const b=REPB[dowNum(k)];if(b==null)return k;
+  const p=k.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);d.setDate(d.getDate()-b);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+
+    String(d.getDate()).padStart(2,'0')}
+/* kalendářní dny, které jednotka pokrývá */
+const dDays=k=>String(k).split('+');
+
+/* jednotky pohledu za měsíc, vzestupně. Do klíče jdou jen dny, které v měsíci
+   opravdu jsou — víkend přes přelom měsíce tak nepřetáhne jednotku jinam. */
+function viewDays(m){
+  const ks=daysOf(m);
+  if(dayG!=='r')return ks;
+  const g={},o=[];
+  ks.forEach(k=>{const a=repAnchor(k);
+    if(!g[a]){g[a]=[];o.push(a)}
+    g[a].push(k)});
+  return o.map(a=>g[a].join('+'))}
+
+/* popisky jednotky — jeden den, nebo rozsah „11.9.2026 – 13.9.2026 · pátek–neděle" */
+const dowOf=k=>{const d=dDays(k);return d.length<2?DOW[dowNum(d[0])]:
+  DOW[dowNum(d[0])]+'–'+DOW[dowNum(d[d.length-1])]};
 /* V KPI kartách je popisek velkými písmeny a zkratka „NE" se čte jako „ne",
    proto se tam píše celý název dne. V tabulce stačí zkratka. */
-const denLabel=k=>k.split('-').reverse().join('.')+' · '+DOWL[dowNum(k)];
-const jeVikend=k=>{const d=dowNum(k);return d===0||d===6};
+const denLabel=k=>{const d=dDays(k);
+  return d.length<2?dmy(d[0])+' · '+DOWL[dowNum(d[0])]:
+    dmy(d[0])+' – '+dmy(d[d.length-1])+' · '+
+    DOWL[dowNum(d[0])]+'–'+DOWL[dowNum(d[d.length-1])]};
+const denKratce=k=>{const d=dDays(k);
+  return d.length<2?dmy(d[0]):dmy(d[0])+' – '+dmy(d[d.length-1])};
 
 /* v čem se dny porovnávají: 'e' = EUR za den, 'q' = EUR na kus */
 let dayU='e',openDay=null;
-const dayEur=k=>(DB[k]||{}).eur||0;
-const dayQty=k=>(DB[k]||{}).qty||0;
+const dayEur=k=>dDays(k).reduce((s,d)=>s+((DB[d]||{}).eur||0),0);
+const dayQty=k=>dDays(k).reduce((s,d)=>s+((DB[d]||{}).qty||0),0);
 /* EUR na kus — u dne bez kusů nemá smysl, vrací null */
 const dayPer=k=>dayQty(k)?dayEur(k)/dayQty(k):null;
 const dayVal=k=>dayU==='e'?dayEur(k):dayPer(k);
 const dayFmt=v=>v==null?'—':(dayU==='e'?fE(v):fEs(v)+' / ks');
 
-/* rozpad dne přes všechny projekty — f: 'r' vady, 'l' pracoviště, 'it' díly.
+/* rozpad jednotky přes všechny projekty — f: 'r' vady, 'l' pracoviště, 'it' díly.
    U každé položky se drží i to, na kterém projektu vznikla. */
 function dayBreak(k,f){
-  const d=DB[k];if(!d||!d.p)return [];
   const o={};
-  Object.entries(d.p).forEach(([pn,P])=>Object.entries(P[f]||{}).forEach(([n,v])=>{
-    const key=f==='r'?rsnKey(n):(f==='lr'?lrKey(n):n);
-    const x=o[key]=o[key]||{e:0,q:0,proj:{}};
-    x.e+=v.e;x.q+=v.q;x.proj[pn]=(x.proj[pn]||0)+v.e}));
+  dDays(k).forEach(dk=>{const d=DB[dk];if(!d||!d.p)return;
+    Object.entries(d.p).forEach(([pn,P])=>Object.entries(P[f]||{}).forEach(([n,v])=>{
+      const key=f==='r'?rsnKey(n):(f==='lr'?lrKey(n):n);
+      const x=o[key]=o[key]||{e:0,q:0,proj:{}};
+      x.e+=v.e;x.q+=v.q;x.proj[pn]=(x.proj[pn]||0)+v.e}))});
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 
-/* projekty dne, sestupně podle EUR */
+/* projekty jednotky, sestupně podle EUR */
 function dayProjects(k){
-  const d=DB[k];if(!d||!d.p)return [];
-  return Object.entries(d.p).map(([n,v])=>[n,{e:v.e,q:v.q}]).sort((a,b)=>b[1].e-a[1].e)}
+  const o={};
+  dDays(k).forEach(dk=>{const d=DB[dk];if(!d||!d.p)return;
+    Object.entries(d.p).forEach(([n,v])=>{
+      const x=o[n]=o[n]||{e:0,q:0};x.e+=v.e;x.q+=v.q})});
+  return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 
 /* název vady z klíče 'kód§popis' */
 const rsnName=key=>{const p=String(key).split('§');return p[1]&&p[1]!=='—'?p[1]:(p[0]||'—')};
@@ -73,4 +117,6 @@ function dayCompare(ks,i,n){
   return{v:v,avg:avg,d:d,pct:d/avg*100,worse:d>0}}
 
 window.setDayU=v=>{dayU=v;openDay=null;renderDash()};
+/* přepnutí pohledu mění klíče jednotek, takže rozbalený řádek už neplatí */
+window.setDayG=v=>{dayG=v;openDay=null;renderDash()};
 window.toggleDay=k=>{openDay=openDay===k?null:k;renderDash()};

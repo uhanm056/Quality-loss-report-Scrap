@@ -126,15 +126,30 @@ function dayToggle(){
     ['e','q'].map((v,i)=>'<button class="sbtn '+(dayU===v?'on':'')+'" onclick="setDayU(\''+v+'\')">'+
       (v==='e'?'EUR':'€ na kus')+'</button>').join('')+'</div>'}
 
+/* Pohled po kalendářních dnech, nebo tak, jak chodí reporty z QAD — v pondělí
+   jeden za pátek, sobotu i neděli. Slepuje se jen zobrazení, data zůstávají
+   po dnech. */
+function grpToggle(){
+  return '<div class="seg">'+
+    [['d','po dnech'],['r','po reportech']].map(v=>
+      '<button class="sbtn '+(dayG===v[0]?'on':'')+'" onclick="setDayG(\''+v[0]+'\')">'+
+      v[1]+'</button>').join('')+'</div>'}
+/* oba přepínače vedle sebe v hlavičce panelu */
+const dayTools=()=>'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+  grpToggle()+dayToggle()+'</div>';
+/* skloňování podle pohledu — „den" nebo „report" */
+const uW=(a,b)=>dayG==='r'?b:a;
+
 /* pruh se změnou proti průměru předchozích dnů */
 function dayDelta(C,n){
-  if(C.d==null)return '<span class="tag n">první den s daty</span>';
+  if(C.d==null)return '<span class="tag n">'+uW('první den s daty','první report')+'</span>';
   const lep=!C.worse;
   return '<span class="tag '+(lep?'g':'r')+'" style="font-size:13px;padding:5px 12px">'+
     (lep?'▼ lepší o ':'▲ horší o ')+dayFmt(Math.abs(C.d))+
     ' ('+(C.pct>0?'+':'−')+Math.abs(C.pct).toFixed(0)+' %)</span>'+
     '<div class="kpi-s" style="margin-top:6px">proti průměru '+
-    (n===1?'předchozího dne ':'předchozích '+n+(n<5?' dnů ':' dnů '))+
+    (n===1?uW('předchozího dne ','předchozího reportu '):
+      'předchozích '+n+uW(' dnů ',' reportů '))+
     dayFmt(C.avg)+'</div>'}
 
 /* sloupec jednoho dne — hodnota, změna a TOP 3 vady.
@@ -153,7 +168,8 @@ function dayColumn(ks,i,titul,prevR){
       (per!=null?' · '+fEs(per)+' na kus':'')+
       (projs.length?' · '+projs.length+' '+(projs.length===1?'projekt':
         (projs.length<5?'projekty':'projektů')):'')+'</div></div>'+
-    '<div class="kpi-l" style="margin:14px 0 8px">TOP 3 vady toho dne</div>'+
+    '<div class="kpi-l" style="margin:14px 0 8px">TOP 3 vady '+
+      uW('toho dne','toho reportu')+'</div>'+
     (top.length?'<table class="tbl"><tbody>'+top.map((r,j)=>{
       const v=r[1],pr=topProj(v),cd=rsnCode(r[0]);
       /* změna proti předchozímu dni — jen tam, kde ho známe */
@@ -172,26 +188,28 @@ function dayColumn(ks,i,titul,prevR){
       '<td class="num" style="color:var(--muted)">'+(tot?Math.round(v.e/tot*100):0)+' %</td>'+
       (prevR?'<td class="num">'+zm+'</td>':'')+
       '</tr>'}).join('')+'</tbody></table>':
-      '<div class="empty" style="padding:18px">Report za tenhle den nemá rozpad na vady.</div>')+
+      '<div class="empty" style="padding:18px">'+
+        uW('Report za tenhle den nemá','Tenhle report nemá')+' rozpad na vady.</div>')+
     '</div>'}
 
 /* poslední den vedle předchozího — co konkrétně scrap táhlo a jak to bylo včera */
 function dashToday(m){
-  const ks=daysOf(m);if(!ks.length)return '';
+  const ks=viewDays(m);if(!ks.length)return '';
   const i=ks.length-1;
   const prevR=i>0?Object.fromEntries(dayBreak(ks[i-1],'r').map(x=>[x[0],x[1].e])):null;
   const dvaDny=i>0;
   return '<div class="panel"><div class="ph">'+
-    '<span>Poslední den'+(dvaDny?' proti předchozímu':'')+
+    '<span>'+uW('Poslední den','Poslední report')+(dvaDny?' proti předchozímu':'')+
     ' &nbsp;<span style="font-weight:600;opacity:.8">· TOP 3 vady a projekt, na kterém vznikly'+
-    '</span></span>'+dayToggle()+'</div><div class="pb">'+
+    '</span></span>'+dayTools()+'</div><div class="pb">'+
     '<div class="'+(dvaDny?'two':'')+'" style="gap:24px">'+
-    dayColumn(ks,i,'Poslední den',prevR)+
-    (dvaDny?dayColumn(ks,i-1,'Předchozí den',null):'')+
+    dayColumn(ks,i,uW('Poslední den','Poslední report'),prevR)+
+    (dvaDny?dayColumn(ks,i-1,uW('Předchozí den','Předchozí report'),null):'')+
     '</div>'+
     (dvaDny?'<div style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7">'+
-      'Sloupec vpravo u posledního dne je změna té vady proti předchozímu dni — '+
-      '<b>nová</b> znamená, že předchozí den ta vada vůbec nebyla.</div>':'')+
+      'Sloupec vpravo je změna té vady proti '+
+      uW('předchozímu dni','předchozímu reportu')+' — <b>nová</b> znamená, že '+
+      uW('předchozí den','předchozí report')+' ta vada vůbec nebyla.</div>':'')+
     '</div></div>'}
 
 /* ── Den po dni: tabulka s rozbalením ────────────────────────────────── */
@@ -208,18 +226,24 @@ function dayMini(rows,tot,titul,typ){
     '</table></div>'}
 
 function dashDays(m){
-  const ks=daysOf(m);if(ks.length<2)return '';
+  const ks=viewDays(m);if(ks.length<2)return '';
   const rows=ks.map((k,i)=>({k:k,i:i,v:dayVal(k),C:dayCompare(ks,i,7),
     prev:i>0?dayVal(ks[i-1]):null,top:dayTopDefect(k)}));
   return '<div class="panel"><div class="ph">'+
-    '<span>Den po dni — '+MN[+m.slice(5,7)-1]+' '+m.slice(0,4)+
-    ' &nbsp;<span style="font-weight:600;opacity:.8">· červeně dny o čtvrtinu horší '+
+    '<span>'+uW('Den po dni','Po reportech')+' — '+MN[+m.slice(5,7)-1]+' '+m.slice(0,4)+
+    ' &nbsp;<span style="font-weight:600;opacity:.8">· červeně '+
+    uW('dny','reporty')+' o čtvrtinu horší '+
     'než průměr · klikni na projekt pro detail</span></span>'+
-    dayToggle()+'</div><div class="pb" style="overflow-x:auto">'+
+    dayTools()+'</div><div class="pb" style="overflow-x:auto">'+
+    (dayG==='r'?'<div class="warnbox" style="margin:0 0 14px"><span style="font-size:26px">🗓️</span>'+
+      '<div><b>Slepeno tak, jak chodí reporty z QAD.</b> V pondělí se dělá jeden '+
+      'součet za pátek, sobotu a neděli — takový řádek tu drží všechny tři dny '+
+      'pohromadě a sedí na blok <i>Daily Scrap by location</i> v pivotu. '+
+      'Uložená data zůstávají po kalendářních dnech, přepnout zpátky jde nahoře.</div></div>':'')+
     '<table class="tbl"><thead><tr><th>Datum</th>'+
       '<th class="num">'+(dayU==='e'?'Scrap':'EUR / ks')+'</th>'+
-      '<th class="num">Proti předchozímu dni</th>'+
-      '<th class="num">Proti průměru 7 dnů</th>'+
+      '<th class="num">'+uW('Proti předchozímu dni','Proti předchozímu reportu')+'</th>'+
+      '<th class="num">Proti průměru 7 '+uW('dnů','reportů')+'</th>'+
       '<th class="num">Kusů</th><th>Hlavní vada</th><th>Projekt</th>'+
       '<th style="width:110px"></th></tr></thead><tbody>'+
     rows.slice().reverse().map(r=>{
@@ -228,7 +252,7 @@ function dashDays(m){
       /* den o čtvrtinu horší než průměr posledních dnů se obarví */
       const spatny=r.C.pct!=null&&r.C.pct>25;
       let out='<tr class="'+(op||spatny?'hi':'')+'">'+
-      '<td><b>'+r.k.split('-').reverse().join('.')+'</b>'+
+      '<td><b>'+denKratce(r.k)+'</b>'+
         '<span style="color:var(--muted);font-size:11px;margin-left:6px">'+dowOf(r.k)+'</span></td>'+
       '<td class="num"><b>'+dayFmt(r.v)+'</b></td>'+
       '<td class="num">'+(dP==null?'<span class="tag n">—</span>':
@@ -242,7 +266,7 @@ function dashDays(m){
         '</span>':''):'<span style="color:var(--muted)">—</span>')+'</td>'+
       '<td>'+(r.top&&r.top.proj?projLink(r.top.proj)+
         '<span style="color:var(--muted);font-size:11px"> · '+Math.round(r.top.share*100)+
-        ' % dne</span>':'<span style="color:var(--muted)">—</span>')+'</td>'+
+        uW(' % dne',' % reportu')+'</span>':'<span style="color:var(--muted)">—</span>')+'</td>'+
       '<td style="text-align:right"><button class="btn" onclick="toggleDay(\''+r.k+'\')">'+
         (op?'▲ skrýt':'▼ rozpad')+'</button></td></tr>';
       if(op){const t=dayEur(r.k);

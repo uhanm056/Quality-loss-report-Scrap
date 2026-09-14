@@ -396,6 +396,30 @@ dnů, se obarví. Jména projektů jsou proklik do Detailu projektu.
 `prevAvg()` počítá průměr **bez aktuálního dne** — jinak by se den porovnával
 sám se sebou a výkyv by se schoval. `movAvg()` do grafu aktuální den zahrnuje.
 
+#### Po dnech / po reportech
+
+Přepínač `dayG` v hlavičce obou panelů. V pondělí se v QAD dělá **jeden report
+za pátek, sobotu a neděli**, takže jeden řádek pivotu odpovídá třem řádkům
+v aplikaci — kvůli tomu se hledala neexistující chyba (v Excelu −5 643 €,
+v aplikaci −6 365 + 351 + 371 €). Pohled **po reportech** ty tři dny slepí do
+jednoho řádku a číslo pak sedí na blok `Daily Scrap by location` jedna ku jedné.
+
+- **`DB` zůstává klíčované kalendářními dny**, slepuje se až při vykreslení
+  (`viewDays(m)` v `js/core/daily.js`). Po dnech je to přesnější a pro problem
+  solving se to hodí — proto je to i výchozí pohled.
+- Klíč slepené jednotky jsou její dny spojené `'+'`
+  (`2026-09-11+2026-09-12+2026-09-13`). Kalendářní klíč `'+'` nikdy neobsahuje,
+  takže se ty dva nedají zaměnit a `dayEur('2026-09-11')` pořád vrací jen ten
+  jeden den. `dDays(k)` z klíče vytáhne dny, všechno ostatní (`dayEur`,
+  `dayQty`, `dayBreak`, `dayProjects`, `denLabel`, `dowOf`) přes něj jde.
+- Do klíče jdou **jen dny, které v tom měsíci opravdu jsou** — víkend přes
+  přelom měsíce tak nepřetáhne jednotku do sousedního měsíce.
+- Přepínač mění **jen kartu posledního dne a tabulku den po dni**. Denní tempo,
+  prognóza, graf i KPI **Nejhorší den měsíce** zůstávají po kalendářních dnech:
+  `pace()` počítá z kalendáře a povolené tempo předpokládá jeden bod na den.
+- Ověřeno na zářijovém exportu: 13 dnů → 9 reportů, součty EUR, kusů i rozpadů
+  sedí na cent v obou pohledech, slepený řádek 11.–13. 9. dá **−5 643 €**.
+
 ### Trend vad
 
 Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Metrika je
