@@ -223,6 +223,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
 | `js/main.js` | start aplikace |
 | `tools/bundle.py` | slepí aplikaci do jednoho HTML na poslání e-mailem — nepovinné, aplikace build nepotřebuje |
+| `.claude/skills/qlr-mesicni-report/` | postup na měsíční QLR report z QAD exportu — stejná metodika jako aplikace |
 
 **Odkazy na `css/` a `js/` mají v `index.html` verzi (`?v=…`).** Bez ní si
 prohlížeč nechá starý soubor: když se změní jen něco v `js/`, `index.html`
@@ -530,6 +531,28 @@ nikdo. Zato tam musí být výčet konkrétních e-mailů: `apiKey` je veřejný
 při zapnutém sign-upu by si kdokoliv založil účet na vymyšlenou adresu z firemní
 domény. Proto se v konzoli vypíná **Authentication → Settings → Enable create
 (sign-up)**.
+
+### Skilla na měsíční QLR report
+
+`.claude/skills/qlr-mesicni-report/SKILL.md` popisuje, jak z QAD exportu udělat
+měsíční QLR report ručně (mimo aplikaci). **Metodika musí sedět s tím, co počítá
+aplikace** — když se změní filtr tady, musí se změnit i tam.
+
+Kopie je v repozitáři schválně: původní verze žila jen v `~/.claude/skills/synced/`,
+odkud ji může přepsat synchronizace. Tohle je ta verze, která platí.
+
+Při revizi se v ní opravily čtyři věci, všechny ověřené na reálném exportu:
+
+| bylo | je | proč |
+|---|---|---|
+| plošný filtr `EUR > 0` | jen u počtu kusů, nikdy u EUR | se zápornými řádky dá červenec 100 474 € (= report), s filtrem 102 925 € |
+| „testy = rozdíl obou" | rozdíl = **dodavatel (kód 20)** | srpen: 170 813 − 94 534 = 76 278 €, přesně kód 20. Testy jsou `Excluded? = YES` a stojí mimo obě čísla |
+| „po `Excluded? = NO` zbývá jen kód 20" | nesmí zbýt **žádný** z kódů v listu | kód 20 v tom seznamu vůbec není, je jen v poznámce vedle |
+| `QLR % = scrap / Sales` | `× 100`, z **with tests**, s varováním | v QAD nejsou zákaznické reklamace — červenec 198 043 € proti oficiálním 246 160 € |
+
+Navíc: datum brát z `Effective Date`, ne z `Date` (liší se na 206 řádcích
+z 38 755), a deduplikace přes `Transaction Number` má smysl jen při skládání
+víc exportů — uvnitř jednoho jsou duplicity nula.
 
 ## Jak pracovat s tímhle projektem
 
