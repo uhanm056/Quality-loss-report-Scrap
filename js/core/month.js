@@ -60,6 +60,14 @@ const curKey=()=>{const d=new Date();
    z toho vyjde nesmyslně vysoké a s cílem se porovnávat nedá. */
 const salesStale=k=>!!((TGTM[k]||{}).part)&&k<curKey();
 
+/* Nejbližší dřívější měsíc, jehož Sales jsou za celý měsíc — tedy ani snímek
+   z průběhu (`part`), ani nesourodý (`salesStale`). Z něj se bere předpoklad
+   pro odhad rozdělaného měsíce; snímkové Sales by odhad podstřelily. */
+function soundSales(k){
+  const ks=Object.keys(TGTM).filter(x=>x<k&&TGTM[x].sales&&!TGTM[x].part).sort();
+  const b=ks[ks.length-1];
+  return b?{key:b,label:mLabel(b),sales:TGTM[b].sales}:null}
+
 /* kompletní výsledek měsíce — vše, co jde spočítat ze stejného snímku dat */
 function monthResult(k){
   const o=TGTM[k]||{},cil=cilEur(k),act=actEur(k);
@@ -75,7 +83,10 @@ function monthResult(k){
     rez:cil!=null&&eur!=null?cil-eur:null,
     pb:pct!=null&&o.t!=null?pct-o.t:null,
     prevKey:prev,prevLabel:prev?mLabel(prev):null,prevPct:pPct,
-    prevEur:pAct?pAct.eur:null}}
+    /* u nesourodého předchozího měsíce nemá porovnání smysl — jeho procento
+       je scrap za celý měsíc dělený snímkovými Sales */
+    prevStale:!!(prev&&salesStale(prev)),
+    prevEur:pAct?pAct.eur:null,base:soundSales(k)}}
 
 /* všechny měsíce z tabulky targetů, od nejstaršího — pro kumulativ */
 function yearRows(){

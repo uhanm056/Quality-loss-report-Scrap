@@ -44,7 +44,8 @@ function dashMonth(R){
 
   /* trend proti předchozímu měsíci */
   let trend='—',tsub='předchozí měsíc neznám',tcls='b';
-  if(R.prevPct!=null&&R.pct!=null){const d=R.pct-R.prevPct;
+  if(R.prevStale)tsub=R.prevLabel+' má Sales jen ke snímku — porovnat nejde';
+  else if(R.prevPct!=null&&R.pct!=null){const d=R.pct-R.prevPct;
     trend=fPB(d);tcls=d>0?'r':'g';
     tsub=R.prevLabel+' '+R.prevPct.toFixed(3)+' % → '+R.pct.toFixed(3)+' %'}
 
@@ -72,13 +73,15 @@ function dashMonth(R){
 /* odhad celého měsíce — jen u probíhajícího měsíce a s výslovným předpokladem */
 function dashEstimate(R){
   let est='';
-  if(R.partial&&R.pct!=null&&R.prevKey&&TGTM[R.prevKey].sales){
-    const ps=TGTM[R.prevKey].sales,fEur=R.pct/100*ps,fCil=R.target/100*ps;
+  /* Předpoklad se bere z posledního měsíce se Sales za celý měsíc, ne nutně
+     z toho předchozího — ten může mít jen snímek z průběhu a odhad by spadl. */
+  if(R.partial&&R.pct!=null&&R.target!=null&&R.base){
+    const ps=R.base.sales,fEur=R.pct/100*ps,fCil=R.target/100*ps;
     est='<div class="panel"><div class="ph"><span>Odhad celého měsíce</span>'+
-      '<span style="font-weight:600;opacity:.85">předpoklad: Sales jako '+R.prevLabel+
+      '<span style="font-weight:600;opacity:.85">předpoklad: Sales jako '+R.base.label+
       ' ('+fE(ps)+')</span></div><div class="pb" style="font-size:14px;line-height:1.8">'+
-      'Kdyby srpnové tempo <b>'+R.pct.toFixed(3)+' %</b> vydrželo do konce měsíce a Sales '+
-      'dosáhly úrovně '+R.prevLabel+', skončil by '+R.label+' zhruba na <b>'+fE(fEur)+'</b> '+
+      'Kdyby dosavadní tempo <b>'+R.pct.toFixed(3)+' %</b> vydrželo do konce měsíce a Sales '+
+      'dosáhly úrovně '+R.base.label+', skončil by '+R.label+' zhruba na <b>'+fE(fEur)+'</b> '+
       'proti cíli <b>'+fE(fCil)+'</b> — rezerva kolem <b>'+fE(fCil-fEur)+'</b>.'+
       '<div style="font-size:12px;color:var(--muted);margin-top:10px">'+
       'Tohle je jediné číslo na stránce, které je odhad. Skutečné Sales za '+R.label+
