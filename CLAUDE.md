@@ -156,6 +156,14 @@ Podmínka `display: c => c.raw != null` je proto vždy nepravdivá a čísla ve 
 zmizí. Hodnota se bere přes `dlVal(c)` z `js/core/utils.js`. Popisky nad sloupcem
 (`anchor:'end'`) navíc nesmí být bílé — sedí na bílém pozadí, ne v grafu.
 
+**QAD posílá i opravné řádky se záporným EUR** a bývají to největší položky dne
+— 11. 9. 2026 mělo G463 M na ASY006 **−9 198 €** a celý den skončil na −6 365 €.
+Do rozpadu se vejde jen `n` největších položek a **rozhoduje absolutní hodnota**.
+Dřív podmínka `v.e>0.5` v `trim()` celou zápornou položku zahodila, takže součet
+položek neseděl na součet dne: z −8 559 € u G463 M zbylo v rozpadu 849 + 82 €.
+Totéž platí pro `top()` v `mdet-parser.js`. **Záporné EUR se nikdy nefiltruje** —
+jsou to opravy a bez nich nesedí ani měsíc (červenec 100 474 € vs 102 925 €).
+
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
 
