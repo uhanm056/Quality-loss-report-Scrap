@@ -115,6 +115,17 @@ má `Excluded? = (Vše)`, takže obsahuje i testovací a nájezdové díly — z
 k 13. 9. dá **76 115 €** proti 39 935 € w/o tests. Aplikace ukazuje w/o tests;
 ten rozdíl **nejsou** chybějící data.
 
+**Blok `Daily Scrap by location` není jeden den.** Filtr u něj hlásí
+`Effective Date = (Vše)`, ale uložené hodnoty pokrývají poslední **tři** dny —
+za zářijový export −5 643,04 € a −90 ks, což je 11. + 12. + 13. 9. dohromady
+(v aplikaci −6 365 + 351 + 371). Všech deset lokací sedí na cent. Než se začne
+hledat chyba, vždycky ověřit, kolik dnů ten pivot ve skutečnosti obsahuje.
+
+**Kusy v tom pivotu se počítají jinak než v aplikaci.** Pivot sčítá
+`Loc Qty Change` **se znaménkem** (−90 ks), aplikace `Quantity Change`
+v **absolutní hodnotě** (164 ks) — u „EUR na kus" jde o to, kolika kusů se to
+týkalo, takže storno se přičítá. V EUR je to shodné, v kusech ne.
+
 **Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
 Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
 
