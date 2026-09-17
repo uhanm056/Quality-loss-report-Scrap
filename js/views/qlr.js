@@ -94,7 +94,7 @@ function qEur(){
   mk('cEur',{type:'bar',data:{labels:lb,datasets:[
     {label:'With tests',data:wt,backgroundColor:'rgba(192,57,43,.75)',borderRadius:3,order:2},
     {label:'W/O tests',data:wo,backgroundColor:'rgba(46,109,164,.7)',borderRadius:3,order:2},
-    {label:'Rozdíl',data:df,type:'line',borderColor:'#27AE60',borderWidth:2,borderDash:[4,3],
+    {label:'Testy a nájezdy',data:df,type:'line',borderColor:'#27AE60',borderWidth:2,borderDash:[4,3],
      pointRadius:2,tension:.3,order:1}]},
    options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:false},

@@ -16,7 +16,7 @@ globální scope a **na pořadí načtení v `index.html`**.
 |---|---|
 | **QLR** | Quality Loss Rate = náklady na nekvalitu / Sales × 100 |
 | **w/o tests** | Scrap bez testovacích a nájezdových dílů a bez dodavatelských. Ukazatel, který se porovnává s targetem. |
-| **with tests** | Vše včetně testů, nájezdů a **zákaznických reklamací**. Z toho se počítá vykazovaný QLR %. Přichází až po uzávěrce měsíce. |
+| **with tests** | Výrobní scrap **včetně testovacích a nájezdových dílů** (`Excluded? = YES`). Z toho se počítá vykazovaný QLR %. **Dodavatelský scrap (kód 20) v něm není** — ten stojí až v bloku `Total`. |
 | **Saving EUR** | (Target % − Scrap w/o tests %) × Sales |
 | **CI task** | Přísnější cíl včetně Continuous Improvement úkolů. Sloupec „Target includes additional CI task". |
 | **Rework** | Oprava vadného dílu místo jeho vyhození. Sleduje se v hodinách i EUR, ale **do QLR % se nezapočítává** — je vedle scrapu. |
@@ -30,13 +30,20 @@ globální scope a **na pořadí načtení v `index.html`**.
 Filtr scrapu z QAD:
 
 ```
-w/o tests   = Excluded? == "NO"  AND  Reason != "20"
-with tests  = Excluded? == "NO"              (vše, včetně dodavatele)
+w/o tests    = Excluded? == "NO"   AND  Reason != "20"
+testy/nájezdy= Excluded? == "YES"
+dodavatel    = Excluded? == "NO"   AND  Reason == "20"
+
+with tests   = w/o tests + testy/nájezdy      ← z tohohle se vykazuje QLR %
+Total        = with tests + dodavatel
 ```
 
-Kód **20 = dodavatel**. Nepočítá se do w/o tests, ale je ve with tests.
-U G463 M dělá dodavatelský scrap zhruba 100 tis. € měsíčně — je to celý rozdíl
-mezi oběma ukazateli, takže záměna metodiky změní číslo několikanásobně.
+**`with tests` NENÍ `Excluded? == "NO"`.** Tahle záměna tu stála osm měsíců
+a držela srpen mimo graf QLR — viz „Odkud se bere QLR with tests" níž.
+
+Kód **20 = dodavatel**. Nepočítá se do w/o tests **ani do with tests** — je až
+v bloku `Total`. U G463 M dělá zhruba 100 tis. € měsíčně, takže záměna metodiky
+změní číslo několikanásobně.
 
 ### Mapování sloupců v QAD exportu
 
@@ -107,7 +114,7 @@ Takto ověřeno:
 |---|---|---|---|---|---|
 | červen 26 | 102 357 | 0,571 % | 197 232 | 17 927 513 | 0,8985 % |
 | červenec 26 | 100 474 | 0,603 % | 246 160 | 16 660 896 | 0,8029 % |
-| srpen 26 | 94 527 | 0,736 % | — | 12 835 650 | 0,8604 % |
+| srpen 26 | 94 527 | 0,736 % | 235 316 | 12 835 650 | 0,8604 % |
 | září 26 (k 13. 9.) | 39 935 | 0,532 % | — | 7 512 959 | 0,8716 % |
 
 **Pozor při srovnávání s Excelem.** Blok `Monthly Total scrap costs` v Pivotu
@@ -132,8 +139,30 @@ s dvanácti řádky, a porovnání s průměrem posledních sedmi dnů nedává 
 v **absolutní hodnotě** (164 ks) — u „EUR na kus" jde o to, kolika kusů se to
 týkalo, takže storno se přičítá. V EUR je to shodné, v kusech ne.
 
-**Nepočítat „with tests" jen z QAD** — zákaznické reklamace tam nejsou.
-Červenec z QAD dá 198 043 €, oficiálně je to 246 160 €.
+### Odkud se bere QLR with tests
+
+**Ověřeno na datech, ne odhadem.** Dřív tu stálo, že „with tests" z QAD spočítat
+nejde, protože v exportu nejsou zákaznické reklamace — červenec prý dá 198 043 €
+proti oficiálním 246 160 €. **Byl to omyl a stálo to srpen v grafu QLR.**
+
+Těch 198 043 € je `Excluded? = NO`, tedy **w/o tests + dodavatel**. S vykazovaným
+číslem nemá nic společného. Vykazované with tests je **w/o tests + testy a nájezdy**:
+
+| měsíc | w/o tests | testy (`Excluded? = YES`) | součet | zapsané `EW` | odchylka |
+|---|---|---|---|---|---|
+| červenec 26 | 100 474 | 145 686 | **246 160** | 246 160 | **0 €** |
+| srpen 26 | 94 527 | 140 789 | **235 316** | 235 316 | **0 €** |
+
+Červenec sedí **na euro** a srpen se ani nemusí počítat — list `overview mng` má
+sekci `with tests` přímo, a její `Total` dá 235 315,68 € / 1,8333 %. Všechny tři
+bloky toho listu (`without tests`, `with tests`, `Total`) dělí na **stejné Sales
+12 835 650 €**, takže jsou za jeden měsíc, ne kumulativně.
+
+Starší měsíce se liší o 0,3–1,6 % (červen nejvíc, +3 078 €) — to je běžný posun
+QAD dat proti tomu, co bylo v reportu v době uzávěrky; stejně driftuje i `EO`.
+**Proto se pro uzavřený měsíc bere číslo z `overview mng`, ne dopočet.**
+
+Žádné zákaznické reklamace v tom nejsou — do QLR % v tomhle reportu nevstupují.
 
 **Sales se načítají automaticky, primárně z listu `Pivot`** (`parseSalesSheet`),
 kde stojí přímo ve sloupci `Sales EUR` a nad blokem je i číslo měsíce
@@ -180,6 +209,14 @@ Dřív podmínka `v.e>0.5` v `trim()` celou zápornou položku zahodila, takže 
 položek neseděl na součet dne: z −8 559 € u G463 M zbylo v rozpadu 849 + 82 €.
 Totéž platí pro `top()` v `mdet-parser.js`. **Záporné EUR se nikdy nefiltruje** —
 jsou to opravy a bez nich nesedí ani měsíc (červenec 100 474 € vs 102 925 €).
+
+**Výchozí rozsah grafu rolling 12M se odvozuje z dat, ne z konstant.**
+V `js/core/utils.js` stály natvrdo `rFrom=19, rTo=30` (Srp 25 → Čvc 26). Po dopsání
+nového měsíce do `js/data/qlr-history.js` se proto graf pořád tvářil, že končí
+červencem — posuvník byl doražený vpravo a srpen stejně nebyl vidět, protože
+`qRoll()` `rTo` jen shora ořezává (`if(rTo>QW.length-1)`), nikdy neposouvá nahoru.
+Teď je to `rTo=LBL.length-1, rFrom=Math.max(0,LBL.length-12)`. `qlr-history.js`
+se načítá dřív než `utils.js`, takže `LBL` už existuje — **to pořadí musí zůstat**.
 
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
@@ -595,9 +632,9 @@ Při revizi se v ní opravily čtyři věci, všechny ověřené na reálném ex
 | bylo | je | proč |
 |---|---|---|
 | plošný filtr `EUR > 0` | jen u počtu kusů, nikdy u EUR | se zápornými řádky dá červenec 100 474 € (= report), s filtrem 102 925 € |
-| „testy = rozdíl obou" | rozdíl = **dodavatel (kód 20)** | srpen: 170 813 − 94 534 = 76 278 €, přesně kód 20. Testy jsou `Excluded? = YES` a stojí mimo obě čísla |
+| „testy = rozdíl obou" | `with tests` = **w/o tests + testy** | `Excluded? = NO` (170 813 € za srpen) je w/o tests + dodavatel a **není to vykazované číslo**. Vykazované with tests je 94 527 + 140 789 = 235 316 €; dodavatel je až v bloku `Total` |
 | „po `Excluded? = NO` zbývá jen kód 20" | nesmí zbýt **žádný** z kódů v listu | kód 20 v tom seznamu vůbec není, je jen v poznámce vedle |
-| `QLR % = scrap / Sales` | `× 100`, z **with tests**, s varováním | v QAD nejsou zákaznické reklamace — červenec 198 043 € proti oficiálním 246 160 € |
+| `QLR % = scrap / Sales` | `× 100`, z **with tests** = w/o tests + testy | červenec dá 246 160 € na euro přesně; varování o chybějících reklamacích bylo zbytečné, do QLR % nevstupují |
 
 Navíc: datum brát z `Effective Date`, ne z `Date` (liší se na 206 řádcích
 z 38 755), a deduplikace přes `Transaction Number` má smysl jen při skládání
@@ -637,5 +674,8 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
 - [ ] Rozhodnout, co s projektem `G463` — jeden řádek za 700 € v dubnu, evidentně
       překlep v `Group 2` místo `G463 M`. Data se nemění bez zdroje, takže zatím
       zůstává jako samostatný projekt.
-- [ ] Historii QLR (`LBL`, `QW`, `EO`, …) pořád přepisovat ručně — export ji nemá
-      celou (chybí zákaznické reklamace)
+- [x] Srpen 2026 v grafu QLR — **235 316 € / 1,8333 %** ze sekce `with tests`
+      v `overview mng`. Držela ho mimo chybná definice („with tests = `Excluded? = NO`")
+- [ ] Načítat historii QLR (`LBL`, `QW`, `EO`, `EW`, …) rovnou z exportu — teď se
+      pořád dopisuje ručně, i když `overview mng` má všechna čísla kromě `SV`
+      (saving se počítá až po uzávěrce)

@@ -6,7 +6,13 @@
 Chart.register(ChartDataLabels);Chart.defaults.plugins.datalabels.display=false;
 
 const MN=['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
-let curTab=0,qSub=0,curMonth=null,curProj=null,rFrom=19,rTo=30,yrView='all',ytdU='%';
+/* Výchozí okno grafu rolling 12M je posledních dvanáct měsíců historie.
+   Dřív tu stály natvrdo indexy 19 a 30 (Srp 25 → Čvc 26), takže po dopsání
+   nového měsíce do js/data/qlr-history.js se graf pořád tvářil, že končí
+   červencem — posuvník byl doražený vpravo a srpen stejně nebyl vidět.
+   qlr-history.js se načítá dřív než tenhle soubor, takže LBL už existuje. */
+let curTab=0,qSub=0,curMonth=null,curProj=null,
+    rTo=LBL.length-1,rFrom=Math.max(0,LBL.length-12),yrView='all',ytdU='%';
 const CH={};
 const fE=v=>Math.round(v||0).toLocaleString('cs-CZ')+' €';
 const fk=v=>Math.round((v||0)/1000).toLocaleString('cs-CZ')+' k€';
