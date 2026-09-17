@@ -55,19 +55,36 @@ a podle něj se skládají měsíce.
   scrap dělený snímkovými Sales dá nesmyslně vysoké procento.
 
 ### 5. Výpočet
-- **Scrap w/o tests** = suma EUR, kde `Excluded? = NO` AND `Reason ≠ "20"`
-- **Scrap with tests** = suma EUR, kde `Excluded? = NO`
-- **Rozdíl obou = dodavatelský scrap (kód 20), NE testy.** Testy a nájezdy jsou
-  řádky s `Excluded? = YES` a stojí **mimo obě čísla**. Nikdy ten rozdíl
-  nepopisuj jako „testy" — u G463 M to dělá ~76 tis. € měsíčně a vedení by
-  dostalo úplně jinou informaci.
-- **QLR % = scrap ÷ Net Sales × 100**, z varianty **with tests**.
+Tři disjunktní skupiny řádků — každý řádek patří právě do jedné:
+
+| skupina | filtr |
+|---|---|
+| **w/o tests** | `Excluded? = NO` AND `Reason ≠ "20"` |
+| **testy a nájezdy** | `Excluded? = YES` |
+| **dodavatel** | `Excluded? = NO` AND `Reason = "20"` |
+
+Z nich se skládají vykazovaná čísla:
+
+```
+with tests = w/o tests + testy a nájezdy      ← z tohohle je QLR %
+Total      = with tests + dodavatel
+```
+
+- **`with tests` NENÍ `Excluded? = NO`.** To je w/o tests + dodavatel a jako
+  vykazované číslo je to **špatně** — za srpen dá 170 813 € místo 235 316 €.
+  Dodavatelský scrap (kód 20) do with tests **nepatří**, je až v `Total`.
+- **QLR % = with tests ÷ Net Sales × 100**.
 - Bez Net Sales napiš „nelze spočítat — chybí Net Sales", nikdy nedosazuj odhad.
 
-> **Vykazovaný QLR % z QAD nespočítáš.** V exportu **nejsou zákaznické
-> reklamace** — červenec z QAD dá 198 043 €, oficiálně je to 246 160 €, tedy
-> o 48 117 € míň. Když počítáš QLR % jen z QAD, **vždy k tomu napiš, že je
-> podhodnocené** a o kolik zhruba.
+> **Nejdřív hledej hotové číslo.** List `overview mng` má sekce `without tests`,
+> `with tests` i `Total` a u každé řádek `Total` s EUR i procentem — pro uzavřený
+> měsíc ber odtud, ne z dopočtu. Ověř, že všechny tři sekce dělí na stejné Sales
+> (`EUR ÷ %`); když ano, jsou za jeden měsíc, ne kumulativně.
+
+> **Dopočet ze `Data QAD` je kontrola, ne primární zdroj.** Červenec sedí na euro
+> (100 474 + 145 686 = 246 160 €), srpen taky (94 527 + 140 789 = 235 316 €), ale
+> u starších měsíců se QAD proti reportu posouvá o 0,3–1,6 % (červen +3 078 €),
+> protože se do něj doúčtovává zpětně. Odchylku v tomhle řádu nehlas jako chybu.
 
 - **Kontrola test kódů:** list `tests and start up` má ve sloupci A kódy
   `TST, ND, 90, PPAP, ART, LAB, OBS, TSTE, 50, E-lvl, 17, 45, 36, SCS, SCIMM…`
@@ -93,7 +110,7 @@ Ověřené hodnoty 2026 (site 1032), na které musí výpočet sednout:
 |---|---|---|---|---|---|
 | červen | 102 357 € | 0,571 % | 197 232 € | 17 927 513 € | 0,8985 % |
 | červenec | 100 474 € | 0,603 % | 246 160 € | 16 660 896 € | 0,8029 % |
-| srpen | 94 527 € | 0,736 % | — | 12 835 650 € | 0,8604 % |
+| srpen | 94 527 € | 0,736 % | 235 316 € | 12 835 650 € | 0,8604 % |
 | září (k 13. 9.) | 39 935 € | 0,532 % | — | 7 512 959 € | 0,8716 % |
 
 Když červenec nevyjde na 100 474 €, je chyba ve filtru — dřív hledej tam než v datech.
