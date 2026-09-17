@@ -218,6 +218,21 @@ nového měsíce do `js/data/qlr-history.js` se proto graf pořád tvářil, že
 Teď je to `rTo=LBL.length-1, rFrom=Math.max(0,LBL.length-12)`. `qlr-history.js`
 se načítá dřív než `utils.js`, takže `LBL` už existuje — **to pořadí musí zůstat**.
 
+**Roční souhrn se pro probíhající rok dopočítává, nezapisuje.** `YRSUM`
+v `js/data/qlr-history.js` drží jen **uzavřené** roky — ověřená čísla ze scrap
+reportu i se skutečnými Net Sales. Dřív tam byl i řádek 2026 a zůstal viset
+u února: ukazoval 348 115 € a QLR **1,58 %**, i když historie byla do srpna
+a správně je 1 580 324 € / **1,22 %**. Probíhající rok teď staví `yrRows()`
+v `js/views/source.js` z měsíčních polí. Ověřeno, že dopočet dá pro 2024 i 2025
+přesně to, co v `YRSUM` stojí (with tests i w/o tests na euro, QLR na dvě
+desetinná místa); Sales se liší o 589 € ze 172 mil., protože se odvozují ze
+zaokrouhlených procent — proto se pro uzavřené roky berou ta zapsaná.
+
+**Saving se u částečného roku porovnává se stejným obdobím.** Osm měsíců 2026
+proti celému 2025 dá „ušetřeno 270 020 €"; proti stejným osmi měsícům je to
+**28 277 €**. `yrRows()` proto u neúplného roku bere z předchozího roku jen
+tolik měsíců, kolik má ten letošní, a do UI napíše, proti čemu se srovnává.
+
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
 
