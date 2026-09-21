@@ -13,15 +13,24 @@ function tblLoc(rows,tot){if(!rows.length)return '<div class="empty" style="padd
       '<td><span class="code">'+r[0]+'</span></td><td class="num">'+fN(r[1].q)+'</td>'+
       '<td class="num">'+fE(r[1].e)+'</td><td class="num" style="color:var(--muted)">'+
       Math.round(r[1].e/tot*100)+' %</td></tr>').join('')+'</tbody></table>'}
-function tblRsn(rows,tot){if(!rows.length)return '<div class="empty" style="padding:18px">Bez detailu</div>';
+/* Tabulka příčin. S denními daty je každý řádek proklik na denní vývoj té vady
+   (`klik` = kurzor a hover, `sel` = zrovna vybraná). Bez denních dat se neklikat
+   nedá — měsíční MDET drží jen součty za celý měsíc, žádné dny v něm nejsou. */
+function tblRsn(rows,tot,klik){if(!rows.length)return '<div class="empty" style="padding:18px">Bez detailu</div>';
   const mx=rows[0][1].e;
   return '<table class="tbl"><thead><tr><th>Příčina</th><th>Kód</th><th class="num">Kusů</th>'+
-    '<th class="num">EUR</th><th class="num">% projektu</th></tr></thead><tbody>'+
-    rows.map((r,i)=>{const p=r[0].split('§');
-      return '<tr class="'+(i===0?'hi':'')+'"><td><b>'+p[1]+'</b>'+bar(r[1].e,mx,i===0)+'</td>'+
+    '<th class="num">EUR</th><th class="num">% projektu</th>'+(klik?'<th style="width:96px"></th>':'')+
+    '</tr></thead><tbody>'+
+    rows.map((r,i)=>{const p=r[0].split('§'),vyb=klik&&curRsn===r[0];
+      return '<tr class="'+(vyb?'sel':(i===0?'hi':''))+(klik?' clik':'')+'"'+
+      (klik?' onclick="pickRsn(\''+esc(r[0])+'\')" title="denní vývoj téhle vady"':'')+'>'+
+      '<td><b>'+p[1]+'</b>'+bar(r[1].e,mx,i===0)+'</td>'+
       '<td>'+(p[0]?'<span class="code">'+p[0]+'</span>':'<span style="color:var(--muted)">—</span>')+'</td>'+
       '<td class="num">'+fN(r[1].q)+'</td><td class="num">'+fE(r[1].e)+'</td>'+
-      '<td class="num" style="color:var(--muted)">'+Math.round(r[1].e/tot*100)+' %</td></tr>'}).join('')+
+      '<td class="num" style="color:var(--muted)">'+Math.round(r[1].e/tot*100)+' %</td>'+
+      (klik?'<td class="num"><span class="tag '+(vyb?'b':'n')+'" style="font-size:11px">'+
+        (vyb?'✓ v grafu':'📈 den po dni')+'</span></td>':'')+
+      '</tr>'}).join('')+
     '</tbody></table>'}
 function tblPairs(rows,tot){if(!rows.length)return '<div class="empty" style="padding:18px">Bez detailu</div>';
   const top=rows.slice(0,15),mx=top[0][1].e;
@@ -42,6 +51,33 @@ function tblItems(rows){
       '<td class="num">'+fN(r[1].q)+'</td><td class="num">'+fE(r[1].e)+'</td>'+
       '<td class="num" style="color:var(--muted)">'+(r[1].q?fE(r[1].e/r[1].q):'—')+'</td></tr>').join('')+
     '</tbody></table>'}
+
+/* ── Denní vývoj vybrané vady ─────────────────────────────────────────
+   Na co se TL ptá u konkrétní vady: kolik dnů se vůbec objevila, kdy byl
+   nejhorší den a jestli to poslední dny roste. Trend klasifikuje `rsnTrend()`
+   z js/core/defects.js — stejná pravidla jako v Trendu vad (poslední třetina
+   období proti předchozí, ±25 %), jen tady jsou obdobím dny, ne měsíce. */
+function rsnPanel(ks,ser,key,projEur){
+  const nm=key.split('§')[1]||key.split('§')[0],kod=key.split('§')[0];
+  const tot=ser.reduce((a,v)=>a+v.e,0),q=ser.reduce((a,v)=>a+v.q,0);
+  const dny=ser.filter(v=>v.e!==0).length;
+  let wi=-1;ser.forEach((v,i)=>{if(wi<0||v.e>ser[wi].e)wi=i});
+  const tr=rsnTrend({m:Object.fromEntries(ks.map((k,i)=>[k,ser[i].e]))},ks.map(k=>({key:k})));
+  const posl=(function(){for(let i=ser.length-1;i>=0;i--)if(ser[i].e!==0)return ks[i];return null})();
+  return '<div class="grid4" style="margin-top:2px">'+
+  '<div class="kpi r"><div class="kpi-l">'+escH(nm)+(kod?' · '+escH(kod):'')+'</div>'+
+    '<div class="kpi-v">'+fE(tot)+'</div>'+
+    '<div class="kpi-s">'+fN(q)+' ks · '+(projEur?Math.round(tot/projEur*100):0)+' % scrapu projektu</div></div>'+
+  '<div class="kpi b"><div class="kpi-l">V kolika dnech</div>'+
+    '<div class="kpi-v">'+dny+' z '+ks.length+'</div>'+
+    '<div class="kpi-s">'+(posl?'naposledy '+denLabel(posl):'v tomhle měsíci vůbec')+'</div></div>'+
+  '<div class="kpi r"><div class="kpi-l">Nejhorší den</div>'+
+    '<div class="kpi-v" style="font-size:19px">'+(wi>=0&&ser[wi].e?fE(ser[wi].e):'—')+'</div>'+
+    '<div class="kpi-s">'+(wi>=0&&ser[wi].e?denLabel(ks[wi])+' · '+fN(ser[wi].q)+' ks':'bez výskytu')+'</div></div>'+
+  '<div class="kpi '+(tr.cls==='r'?'r':(tr.cls==='g'?'g':'b'))+'"><div class="kpi-l">Trend v měsíci</div>'+
+    '<div class="kpi-v" style="font-size:22px">'+tr.lab+'</div>'+
+    '<div class="kpi-s">'+(tr.pct!=null&&tr.a?'poslední dny '+fE(tr.b)+' proti '+fE(tr.a)+
+      ' ('+(tr.pct>0?'+':'')+tr.pct.toFixed(0)+' %)':'na zařazení trendu je málo dnů')+'</div></div></div>'}
 
 function renderProj(){
   const box=document.getElementById('projBody');
@@ -81,6 +117,13 @@ function renderProj(){
     R=mergeBy((D.R||[]).map(x=>[x[0]+'§'+x[1],{e:x[3],q:x[4]||0}]).filter(x=>x[1].e>0),rsnKey);
     P=mergeBy((D.P||[]).map(x=>[x[0]+'¶§'+x[1],{e:x[3],q:x[4]||0}]).filter(x=>x[1].e>0));
   }
+  /* Vybraná vada se drží i po přepnutí měsíce — je užitečné vidět tu samou
+     vadu v jiném měsíci, i kdyby tam vůbec nebyla (to je taky odpověď).
+     Denní řada existuje jen u denních dat; měsíční MDET dny nemá. */
+  const rsnSel=(SRC==='day'&&curRsn)?curRsn:null;
+  const rsnSer=rsnSel?projRsnDays(curMonth,curProj,rsnSel):null;
+  const rsnRow=rsnSel?R.find(r=>r[0]===rsnSel):null;
+
   const wL=L[0],wR=R[0];
   const pt=mm?pTgt(mm,curProj):null,ps=mm?pSales(mm,curProj):null;
   const act=ps?me.e/ps*100:null;
@@ -105,24 +148,61 @@ function renderProj(){
     '<div class="kpi-v" style="font-size:19px">'+(wR?wR[0].split('§')[1]:'—')+'</div>'+
     '<div class="kpi-s">'+(wR?fE(wR[1].e)+' · '+fN(wR[1].q)+' ks':'bez rozpadu')+'</div></div></div>'+
   '<div style="font-size:12px;color:var(--muted);padding:2px">'+srcNote+'</div>'+
-  (SRC==='day'?'<div class="panel"><div class="ph"><span>Denní vývoj — '+curProj+'</span></div>'+
-    '<div class="pb"><div class="chw" style="height:190px"><canvas id="cProj"></canvas></div></div></div>':'')+
+  (SRC==='day'?'<div class="panel"><div class="ph">'+
+    '<span>Denní vývoj — '+curProj+
+      (rsnSel?' <span style="font-weight:600;opacity:.85">· '+escH(rsnSel.split('§')[1]||rsnSel)+'</span>':'')+
+    '</span>'+
+    (rsnSel?'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+      '<div class="legend" style="color:rgba(255,255,255,.85)">'+
+      '<span><span class="sw" style="background:#9CC5E8"></span>celý projekt</span>'+
+      '<span><span class="sw" style="background:#C0392B"></span>'+
+        escH(rsnSel.split('§')[1]||rsnSel)+'</span></div>'+
+      '<button class="btn" onclick="pickRsn(null)">✕ zrušit vadu</button></div>'
+     :'<span style="font-weight:600;opacity:.85">klikni na vadu v tabulce Příčiny →</span>')+
+    '</div>'+
+    '<div class="pb"><div class="chw" style="height:190px"><canvas id="cProj"></canvas></div>'+
+    (rsnSel&&!rsnRow?'<div class="warnbox" style="margin:12px 0 0"><span style="font-size:26px">🔍</span>'+
+      '<div><b>'+escH(rsnSel.split('§')[1]||rsnSel)+'</b> se u '+curProj+' v '+MN[mm-1]+
+      ' vůbec nevyskytla.</div></div>':'')+
+    '</div></div>'+
+    (rsnSer?rsnPanel(ks,rsnSer,rsnSel,me.e):''):'')+
   '<div style="font-size:12px;color:var(--muted);padding:2px 2px 0"><b>% projektu</b> = podíl na scrapu '+
     curProj+' za '+MN[mm-1]+' ('+fE(me.e)+').</div>'+
   '<div class="two"><div class="panel"><div class="ph"><span>Pracoviště</span></div>'+
     '<div class="pb" style="overflow-x:auto">'+tblLoc(L,me.e)+'</div></div>'+
-    '<div class="panel"><div class="ph"><span>Příčiny (reason code)</span></div>'+
-    '<div class="pb" style="overflow-x:auto">'+tblRsn(R,me.e)+'</div></div></div>'+
+    '<div class="panel"><div class="ph"><span>Příčiny (reason code)</span>'+
+    (SRC==='day'?'<span style="font-weight:600;opacity:.85">klikni na vadu → denní vývoj</span>':'')+
+    '</div>'+
+    '<div class="pb" style="overflow-x:auto">'+tblRsn(R,me.e,SRC==='day')+
+    (SRC==='day'?'':'<div style="font-size:12px;color:var(--muted);margin-top:9px">'+
+      'Denní vývoj jednotlivé vady jde ukázat jen z denních reportů — '+
+      'měsíční QAD export drží za celý měsíc jen součty.</div>')+
+    '</div></div></div>'+
   '<div class="panel"><div class="ph"><span>Top scrap — pracoviště × příčina</span></div>'+
     '<div class="pb" style="overflow-x:auto">'+tblPairs(P,me.e)+'</div></div>'+
   (I.length?'<div class="panel"><div class="ph"><span>Nejdražší díly</span></div>'+
     '<div class="pb" style="overflow-x:auto">'+tblItems(I)+'</div></div>':'');
 
-  if(SRC==='day')mk('cProj',{type:'bar',data:{labels:ks.map(k=>k.slice(8)+'.'+k.slice(5,7)+'.'),
-    datasets:[{data:projDaily(curMonth,curProj),backgroundColor:'#2E6DA4',borderRadius:5}]},
-   options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},datalabels:{display:false},
-      tooltip:{callbacks:{label:c=>' '+fE(c.raw)}}},
-    scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
-      y:{ticks:{callback:v=>Math.round(v/1000)+'k',font:{size:10},color:'#7F8C8D'},
-        grid:grd,border:{display:false},beginAtZero:true}}}})}
+  if(SRC==='day'){
+    /* Při vybrané vadě jdou sloupce projektu do světlé modré a vada se kreslí
+       přes ně čárou — jde o to vidět, jakou část dne ta vada udělala. */
+    const ds=[{type:'bar',label:curProj,data:projDaily(curMonth,curProj),
+      backgroundColor:rsnSel?'#9CC5E8':'#2E6DA4',borderRadius:5,order:3}];
+    if(rsnSer)ds.push({type:'line',label:rsnSel.split('§')[1]||rsnSel,
+      data:rsnSer.map(v=>v.e),borderColor:'#C0392B',backgroundColor:'rgba(192,57,43,.10)',
+      fill:true,borderWidth:2,pointRadius:3,pointBackgroundColor:'#C0392B',tension:.25,order:1});
+    mk('cProj',{data:{labels:ks.map(k=>k.slice(8)+'.'+k.slice(5,7)+'.'),datasets:ds},
+     options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},datalabels:{display:false},
+        tooltip:{mode:'index',intersect:false,
+          callbacks:{title:c=>denLabel(ks[c[0].dataIndex]),
+            label:c=>' '+c.dataset.label+': '+fE(c.raw)}}},
+      scales:{x:{ticks:{font:{size:11}},grid:{display:false}},
+        /* u projektu bývají denní částky ve stovkách — pevné dělení tisíci
+           dělalo z celé osy samé „0k" */
+        y:{ticks:{callback:v=>v>=1000?Math.round(v/1000)+'k':Math.round(v),
+          font:{size:10},color:'#7F8C8D'},
+          grid:grd,border:{display:false},beginAtZero:true}}}})}}
+
+/* výběr vady je přepínač — druhý klik na tutéž ji zase zruší */
+window.pickRsn=k=>{curRsn=(k&&curRsn!==k)?k:null;renderProj()};

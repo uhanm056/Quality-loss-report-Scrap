@@ -14,8 +14,9 @@ window.setQSub=i=>{qSub=i;
   renderBar();renderQ()};
 window.setM=m=>{curMonth=m;renderBar();renderDash();
   if(curTab===3)renderProj()};
-window.pickProj=p=>{curProj=p;renderProj()};
-window.openProj=p=>{curProj=p;curTab=3;
+/* jiný projekt = jiné vady, vybraná vada by nedávala smysl */
+window.pickProj=p=>{curProj=p;curRsn=null;renderProj()};
+window.openProj=p=>{curProj=p;curRsn=null;curTab=3;
   document.querySelectorAll('.view').forEach((v,j)=>v.classList.toggle('on',j===3));
   document.querySelectorAll('.tab').forEach((x,j)=>x.classList.toggle('on',j===3));
   renderBar();renderProj();window.scrollTo({top:0,behavior:'smooth'})};

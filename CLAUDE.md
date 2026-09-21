@@ -472,6 +472,33 @@ jednoho řádku a číslo pak sedí na blok `Daily Scrap by location` jedna ku j
 - Ověřeno na zářijovém exportu: 13 dnů → 9 reportů, součty EUR, kusů i rozpadů
   sedí na cent v obou pohledech, slepený řádek 11.–13. 9. dá **−5 643 €**.
 
+### Denní vývoj jedné vady
+
+Záložka **Detail projektu**. V tabulce **Příčiny (reason code)** je každý řádek
+proklik (`pickRsn` v `js/views/project.js`) — vada se vykreslí do panelu
+**Denní vývoj** jako červená čára přes světlé sloupce celého projektu. Jde o to
+vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
+
+- Denní řadu staví `projRsnDays(m,p,key)` v `js/core/aggregate.js`. Klíč je
+  `kód§popis` **už protažený přes `rsnKey()`**, takže se sečte `PVZD` i `pvzd` —
+  proto se nedá sáhnout přímo do `r[key]` a musí se projít celá mapa dne.
+- Pod grafem jsou čtyři KPI: EUR a kusy s podílem na projektu, **v kolika dnech
+  z kolika** a kdy naposledy, **nejhorší den** s datem i kusy, a **trend**.
+  Trend klasifikuje `rsnTrend()` z `js/core/defects.js` — stejná pravidla jako
+  v Trendu vad (poslední třetina období proti předchozí, ±25 %), jen jsou tady
+  obdobím dny, ne měsíce.
+- **Jen z denních dat.** V měsíčním režimu (`MDET`) se neklikat nedá a je
+  v UI napsané proč — měsíční export drží za celý měsíc jen součty.
+- Výběr se drží i po **přepnutí měsíce** — vidět tu samou vadu jinde je
+  užitečné, i když tam vůbec nebyla (to je taky odpověď, píše se to do pruhu).
+  Přepnutí **projektu** výběr ruší (`pickProj`/`openProj` v `js/core/nav.js`),
+  protože jiný projekt má jiné vady.
+- Ověřeno na zářijovém exportu: denní řada sedí na tabulku **v EUR i kusech
+  u všech vad projektu** a jejich součet dá scrap projektu.
+
+Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
+částkami ve stovkách byly všechny popisky `0k`.
+
 ### Trend vad
 
 Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Metrika je
