@@ -62,6 +62,7 @@ color:var(--muted);margin-bottom:7px}
 .tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700}
 .tag.g{background:#EAFAF1;color:#1E8449}.tag.r{background:#FDEDEC;color:#922B21}
 .tag.n{background:var(--bg);color:var(--muted)}
+.tag.b{background:#E8F0F9;color:var(--dark)}
 .panel{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
 .ph{background:var(--dark);color:#fff;padding:12px 20px;font-size:13px;font-weight:700;
 display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -103,6 +104,11 @@ letter-spacing:.5px;color:var(--muted);border-bottom:2px solid var(--border);whi
 .tbl tr:last-child td{border-bottom:none}
 .tbl .num{text-align:right;font-weight:700;white-space:nowrap}
 .tbl tr.hi td{background:#FDF4F3}
+/* řádek, na který se dá kliknout (vada v Detailu projektu), a ten vybraný */
+.tbl tr.clik{cursor:pointer}
+.tbl tr.clik:hover td{background:#EEF4FB}
+.tbl tr.sel td{background:#E8F0F9;box-shadow:inset 0 0 0 9999px rgba(46,109,164,.06)}
+.tbl tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--mid)}
 .code{font-size:11px;font-weight:800;color:var(--muted);background:var(--bg);
 border:1px solid var(--border);border-radius:6px;padding:2px 7px;white-space:nowrap}
 .minib{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:4px;min-width:70px}

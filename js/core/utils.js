@@ -11,7 +11,7 @@ const MN=['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srp
    nového měsíce do js/data/qlr-history.js se graf pořád tvářil, že končí
    červencem — posuvník byl doražený vpravo a srpen stejně nebyl vidět.
    qlr-history.js se načítá dřív než tenhle soubor, takže LBL už existuje. */
-let curTab=0,qSub=0,curMonth=null,curProj=null,
+let curTab=0,qSub=0,curMonth=null,curProj=null,curRsn=null,
     rTo=LBL.length-1,rFrom=Math.max(0,LBL.length-12),yrView='all',ytdU='%';
 const CH={};
 const fE=v=>Math.round(v||0).toLocaleString('cs-CZ')+' €';

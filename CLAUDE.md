@@ -218,6 +218,21 @@ nového měsíce do `js/data/qlr-history.js` se proto graf pořád tvářil, že
 Teď je to `rTo=LBL.length-1, rFrom=Math.max(0,LBL.length-12)`. `qlr-history.js`
 se načítá dřív než `utils.js`, takže `LBL` už existuje — **to pořadí musí zůstat**.
 
+**Roční souhrn se pro probíhající rok dopočítává, nezapisuje.** `YRSUM`
+v `js/data/qlr-history.js` drží jen **uzavřené** roky — ověřená čísla ze scrap
+reportu i se skutečnými Net Sales. Dřív tam byl i řádek 2026 a zůstal viset
+u února: ukazoval 348 115 € a QLR **1,58 %**, i když historie byla do srpna
+a správně je 1 580 324 € / **1,22 %**. Probíhající rok teď staví `yrRows()`
+v `js/views/source.js` z měsíčních polí. Ověřeno, že dopočet dá pro 2024 i 2025
+přesně to, co v `YRSUM` stojí (with tests i w/o tests na euro, QLR na dvě
+desetinná místa); Sales se liší o 589 € ze 172 mil., protože se odvozují ze
+zaokrouhlených procent — proto se pro uzavřené roky berou ta zapsaná.
+
+**Saving se u částečného roku porovnává se stejným obdobím.** Osm měsíců 2026
+proti celému 2025 dá „ušetřeno 270 020 €"; proti stejným osmi měsícům je to
+**28 277 €**. `yrRows()` proto u neúplného roku bere z předchozího roku jen
+tolik měsíců, kolik má ten letošní, a do UI napíše, proti čemu se srovnává.
+
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
 
@@ -456,6 +471,33 @@ jednoho řádku a číslo pak sedí na blok `Daily Scrap by location` jedna ku j
   `pace()` počítá z kalendáře a povolené tempo předpokládá jeden bod na den.
 - Ověřeno na zářijovém exportu: 13 dnů → 9 reportů, součty EUR, kusů i rozpadů
   sedí na cent v obou pohledech, slepený řádek 11.–13. 9. dá **−5 643 €**.
+
+### Denní vývoj jedné vady
+
+Záložka **Detail projektu**. V tabulce **Příčiny (reason code)** je každý řádek
+proklik (`pickRsn` v `js/views/project.js`) — vada se vykreslí do panelu
+**Denní vývoj** jako červená čára přes světlé sloupce celého projektu. Jde o to
+vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
+
+- Denní řadu staví `projRsnDays(m,p,key)` v `js/core/aggregate.js`. Klíč je
+  `kód§popis` **už protažený přes `rsnKey()`**, takže se sečte `PVZD` i `pvzd` —
+  proto se nedá sáhnout přímo do `r[key]` a musí se projít celá mapa dne.
+- Pod grafem jsou čtyři KPI: EUR a kusy s podílem na projektu, **v kolika dnech
+  z kolika** a kdy naposledy, **nejhorší den** s datem i kusy, a **trend**.
+  Trend klasifikuje `rsnTrend()` z `js/core/defects.js` — stejná pravidla jako
+  v Trendu vad (poslední třetina období proti předchozí, ±25 %), jen jsou tady
+  obdobím dny, ne měsíce.
+- **Jen z denních dat.** V měsíčním režimu (`MDET`) se neklikat nedá a je
+  v UI napsané proč — měsíční export drží za celý měsíc jen součty.
+- Výběr se drží i po **přepnutí měsíce** — vidět tu samou vadu jinde je
+  užitečné, i když tam vůbec nebyla (to je taky odpověď, píše se to do pruhu).
+  Přepnutí **projektu** výběr ruší (`pickProj`/`openProj` v `js/core/nav.js`),
+  protože jiný projekt má jiné vady.
+- Ověřeno na zářijovém exportu: denní řada sedí na tabulku **v EUR i kusech
+  u všech vad projektu** a jejich součet dá scrap projektu.
+
+Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
+částkami ve stovkách byly všechny popisky `0k`.
 
 ### Trend vad
 

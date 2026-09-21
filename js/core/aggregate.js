@@ -21,5 +21,12 @@ function projBreak(m,p,f){const o={};
       o[key]=o[key]||{e:0,q:0};o[key].e+=v.e;o[key].q+=v.q})});
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 const projDaily=(m,p)=>daysOf(m).map(k=>((DB[k].p||{})[p]||{e:0}).e);
+/* Denní řada jedné vady u projektu — den po dni {e,q}.
+   Klíč je 'kód§popis' už protažený přes rsnKey(), takže se sečte PVZD i pvzd;
+   proto se nedá sáhnout přímo do r[key] a musí se projít celá mapa dne. */
+const projRsnDays=(m,p,key)=>daysOf(m).map(k=>{
+  const R=((DB[k].p||{})[p]||{}).r||{},o={e:0,q:0};
+  Object.entries(R).forEach(([n,v])=>{if(rsnKey(n)===key){o.e+=v.e;o.q+=v.q}});
+  return o});
 const hasDetail=m=>daysOf(m).some(k=>DB[k].p&&Object.keys(DB[k].p).length);
 const daysNoDetail=m=>daysOf(m).filter(k=>!(DB[k].p&&Object.keys(DB[k].p).length));
