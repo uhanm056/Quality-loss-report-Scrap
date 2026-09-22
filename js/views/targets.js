@@ -11,6 +11,7 @@ function renderTgt(){
     '<th class="num">Cíl v EUR</th><th>Sales jen ke snímku</th><th></th></tr></thead><tbody>'+
     ks.map(function(k){const o=TGTM[k],mm=+k.slice(5,7);
       const eur=(o.t&&o.sales)?Math.round(o.t/100*o.sales):null;
+      const eurCi=(o.ci&&o.sales)?Math.round(o.ci/100*o.sales):null;
       return '<tr id="tgr_'+k+'"'+(o.part?' style="background:#FEF9E7"':'')+
       '><td><b>'+MN[mm-1]+' '+k.slice(0,4)+'</b></td>'+
       '<td class="num"><input class="inp" style="width:88px" type="number" step="0.01" value="'+
@@ -19,7 +20,9 @@ function renderTgt(){
         (o.ci!=null?o.ci:'')+'" onchange="setTgt(\''+k+'\',\'ci\',this.value)"></td>'+
       '<td class="num"><input class="inp" style="width:120px" type="number" value="'+
         (o.sales!=null?o.sales:'')+'" onchange="setTgt(\''+k+'\',\'sales\',this.value)"></td>'+
-      '<td class="num"><b>'+(eur!=null?fE(eur):'—')+'</b></td>'+
+      '<td class="num"><b>'+(eur!=null?fE(eur):'—')+'</b>'+
+        (eurCi!=null?'<div style="font-size:11px;color:var(--muted)">s CI '+fE(eurCi)+'</div>':'')+
+        '</td>'+
       '<td><label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">'+
         '<input type="checkbox"'+(o.part?' checked':'')+
         ' onchange="setPart(\''+k+'\',this.checked)">'+

@@ -85,6 +85,26 @@ function dayProjects(k){
       const x=o[n]=o[n]||{e:0,q:0};x.e+=v.e;x.q+=v.q})});
   return Object.entries(o).sort((a,b)=>b[1].e-a[1].e)}
 
+/* Co je pod jedním pracovištěm v ten den — vady (s projektem, na kterém
+   vznikly) a projekty. `lr` je klíčované 'pracoviště¶kód§popis' a drží se
+   po projektech, takže se prochází celá mapa a filtruje se podle pracoviště.
+   Díly se takhle vzít nedají — `it` se klíčuje jen číslem dílu, bez lokace. */
+function dayLocDetail(k,loc){
+  const rs={},ps={};let e=0,q=0;
+  dDays(k).forEach(dk=>{const d=DB[dk];if(!d||!d.p)return;
+    Object.entries(d.p).forEach(([pn,P])=>{
+      const L=(P.l||{})[loc];
+      if(L){const y=ps[pn]=ps[pn]||{e:0,q:0};y.e+=L.e;y.q+=L.q;e+=L.e;q+=L.q}
+      Object.entries(P.lr||{}).forEach(([n,v])=>{
+        const t=String(n),i=t.indexOf('¶');if(i<0)return;
+        if(t.slice(0,i)!==loc)return;
+        const key=rsnKey(t.slice(i+1));
+        const x=rs[key]=rs[key]||{e:0,q:0,proj:{}};
+        x.e+=v.e;x.q+=v.q;x.proj[pn]=(x.proj[pn]||0)+v.e})})});
+  return{loc:loc,e:e,q:q,
+    r:Object.entries(rs).sort((a,b)=>b[1].e-a[1].e),
+    p:Object.entries(ps).sort((a,b)=>b[1].e-a[1].e)}}
+
 /* název vady z klíče 'kód§popis' */
 const rsnName=key=>{const p=String(key).split('§');return p[1]&&p[1]!=='—'?p[1]:(p[0]||'—')};
 const rsnCode=key=>String(key).split('§')[0]||'';
@@ -116,7 +136,11 @@ function dayCompare(ks,i,n){
   const d=v-avg;
   return{v:v,avg:avg,d:d,pct:d/avg*100,worse:d>0}}
 
+/* rozbalené pracoviště v rozpadu dne — přepínač, druhý klik zavře */
+let openLoc=null;
+window.pickLoc=c=>{openLoc=(c&&openLoc!==c)?c:null;renderDash()};
+
 window.setDayU=v=>{dayU=v;openDay=null;renderDash()};
 /* přepnutí pohledu mění klíče jednotek, takže rozbalený řádek už neplatí */
-window.setDayG=v=>{dayG=v;openDay=null;renderDash()};
+window.setDayG=v=>{dayG=v;openDay=null;openLoc=null;renderDash()};
 window.toggleDay=k=>{openDay=openDay===k?null:k;renderDash()};

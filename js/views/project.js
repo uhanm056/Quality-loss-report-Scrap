@@ -140,7 +140,9 @@ function renderProj(){
     '<div class="kpi-s">'+Math.round(me.e/tot*100)+' % scrapu závodu</div></div>'+
   '<div class="kpi '+(act&&pt&&pt[0]!=null&&act>pt[0]?'r':'g')+'"><div class="kpi-l">% ze Sales projektu</div>'+
     '<div class="kpi-v">'+(act!=null?act.toFixed(2)+' %':'—')+'</div>'+
-    '<div class="kpi-s">'+(pt&&pt[0]!=null?'target '+pt[0].toFixed(2)+' %':'target neznámý')+'</div></div>'+
+    '<div class="kpi-s">'+(pt&&pt[0]!=null?'target '+pt[0].toFixed(2)+' %'+
+      /* přísnější cíl s CI taskem — u projektu ho taky nemá každý měsíc */
+      (pt[1]!=null?' · s CI taskem '+pt[1].toFixed(2)+' %':''):'target neznámý')+'</div></div>'+
   '<div class="kpi r"><div class="kpi-l">Nejdražší pracoviště</div>'+
     '<div class="kpi-v" style="font-size:19px">'+(wL?locName(wL[0]):'—')+'</div>'+
     '<div class="kpi-s">'+(wL?fE(wL[1].e)+' · '+Math.round(wL[1].e/me.e*100)+' % projektu':'bez rozpadu')+'</div></div>'+

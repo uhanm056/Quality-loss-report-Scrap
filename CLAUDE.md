@@ -360,6 +360,39 @@ napíše do UI**:
 
 Pro červenec dá `EO` 100 474 € a `MDET` 100 475 € — přednost má report.
 
+#### Cíl s CI taskem
+
+Vedle hlavního cíle se všude, kde se cíl uvádí, píše i **přísnější cíl s CI
+tasky** (`TGTM[k].ci`, druhý blok listu `Target`):
+
+```
+cíl v EUR          = target % × Sales        (TGTM[k].t)
+cíl s CI v EUR     = target CI % × Sales     (TGTM[k].ci)
+```
+
+`monthResult()` k tomu vrací `cilCi`, `rezCi` a `pbCi`, `yearSum()` navíc
+`ciN`, `cilCi`, `rezCi`, `ciTgt`, `ciEur`. Ukazuje se to v:
+
+- **KPI Cíl v EUR** (Přehled scrapu) — pod hlavním cílem štítek `s CI taskem
+  0,64 %` s cílem v EUR a rezervou; obarvený podle toho, jestli jsme pod ním
+- **hlavičce měsíce** — věta „Proti přísnějšímu cíli s CI taskem … p.b. pod/nad"
+- **Kumulativu 2026** — sloupce `Target + CI %`, `Cíl + CI EUR`, `Rezerva k CI`
+- **Nastavení** — u Cíle v EUR druhý řádek `s CI …`
+- **Detailu projektu** — u targetu projektu (`PTGTM[k][projekt][1]`)
+
+**Porovnává se dál s hlavním targetem**, CI je jen vedle — hlavní target je to,
+co se vykazuje proti workplanu.
+
+**CI task nemá každý měsíc.** V ručně zapsaném `js/data/targets.js` chybí
+u ledna až června 2026; import z workplanu ho doplní všude. Kde chybí, je
+v tabulkách pomlčka a v KPI „CI task pro tenhle měsíc zadaný není".
+
+**Součet cílů s CI jde jen přes měsíce, které ho mají** — jinak by míchal
+přísný cíl s chybějícím a vyšel nesmyslně nízký. V řádku `Celkem` pak stojí
+vedle skutečnosti za *všechny* měsíce, takže `162 010 €` proti `729 923 €`
+vypadá jako propadák, i když je to jen jiný počet měsíců. **Proto se u obou
+součtů s CI píše „jen N měsíců" přímo do buňky**, ne až pod tabulku.
+
 **U probíhajícího měsíce (`part`) jsou scrap i Sales ke stejnému snímku dat.**
 Cíl v EUR je proto taky jen k tomu snímku. Prognóza z denního tempa je za celý
 měsíc, takže se s tímhle cílem **neporovnává** — v UI je to napsané a porovnává
@@ -498,6 +531,40 @@ vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
 
 Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
 částkami ve stovkách byly všechny popisky `0k`.
+
+### Rozpad posledního dne
+
+Panel **Rozpad posledního dne** v Přehledu scrapu (`dashSplit` v `js/views/dash.js`).
+Pivot v QAD má tři denní bloky a **nesčítají se stejně**:
+
+| blok v pivotu | co to je |
+|---|---|
+| `Daily - TOP 10 reasons` | jen výběr deseti vad — na celý den se **nesečte** |
+| `Daily Scrap by platforms` | celý den po projektech |
+| `Daily Scrap by location` | celý den po pracovištích |
+
+Karta **Poslední den** ukazuje TOP 3 vady, takže vedle dvou rozpadů za celý den
+vypadala jako chybějící data. Proto je pod ní panel se **všemi třemi rozpady,
+každý s řádkem `Celkem`** — platformy, pracoviště i vady, všechny za týž den.
+V kartě je k TOP 3 dopsané, kolik ze dne dělají a že celý rozpad je níž.
+
+**Pracoviště je proklik** (`pickLoc`) — rozbalí se pod ním, co je pod ním ten
+den: **vady** (s projektem, na kterém vznikly) a **platformy**. Staví to
+`dayLocDetail(k,loc)` v `js/core/daily.js`; `lr` je klíčované
+`pracoviště¶kód§popis` a drží se po projektech, takže se prochází celá mapa
+a filtruje podle pracoviště. **Díly takhle vzít nejdou** — `it` se klíčuje jen
+číslem dílu, bez lokace.
+
+**Součet položek se od dne liší o pár eur a je to v pořádku.** Parser
+zaokrouhluje každou položku rozpadu zvlášť (`trim()`), takže u dvanácti
+pracovišť se součet rozejde až o 6 € — na zářijových datech je největší
+odchylka **4 €**. Hlásí se to proto **šedě jako zaokrouhlení**, dokud se rozdíl
+do počtu položek vejde (`tol = ceil(n/2)+1`); **červeně** až když je větší,
+protože to znamená, že se do rozpadu nevešly všechny položky (`trim()` má strop
+30 lokací / 40 vad / 60 kombinací na projekt).
+
+Panel respektuje přepínač **po dnech / po reportech** a v pondělním režimu
+ukazuje rozpad za pátek + víkend dohromady.
 
 ### Trend vad
 
