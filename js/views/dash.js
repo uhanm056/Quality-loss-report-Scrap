@@ -38,6 +38,13 @@ function dashMonth(R){
   else{cls='ok';ic='✅';hd=R.partial?'Držíme tempo':'Skončili jsme pod cílem';
     tx='Skutečnost <b>'+R.pct.toFixed(3)+' %</b> ze Sales proti cíli <b>'+R.target.toFixed(2)+' %</b> — '+
       '<b>'+Math.abs(R.pb).toFixed(2)+' p.b. pod</b>. Rezerva <b>'+fE(R.rez)+'</b>.'}
+  /* přísnější cíl s CI tasky — jen tam, kde vůbec dává smysl porovnávat */
+  if(R.pbCi!=null&&!R.stale)
+    tx+=' Proti přísnějšímu cíli s CI taskem <b>'+R.targetCI.toFixed(2)+' %</b> jsme '+
+      (R.pbCi>0?'<b>'+R.pbCi.toFixed(2)+' p.b. nad</b>'+
+        (R.rezCi!=null?' (chybí '+fE(-R.rezCi)+')':'')
+       :'<b>'+Math.abs(R.pbCi).toFixed(2)+' p.b. pod</b>'+
+        (R.rezCi!=null?' (rezerva '+fE(R.rezCi)+')':''))+'.';
   /* u nesouhlasného snímku by ta věta říkala pravý opak — právě že nesedí */
   if(R.partial&&!R.stale&&R.pct!=null)
     tx+=' Měsíc probíhá — scrap i Sales jsou ke stejnému snímku dat.';
@@ -57,7 +64,17 @@ function dashMonth(R){
     '<div class="kpi b"><div class="kpi-l">Cíl v EUR — '+R.label+'</div>'+
       '<div class="kpi-v">'+(R.cil!=null?fE(R.cil):'—')+'</div>'+
       '<div class="kpi-s">'+(R.cil!=null?R.target.toFixed(2)+' % ze Sales '+fE(R.sales):
-        'chybí target nebo Sales')+'</div></div>'+
+        'chybí target nebo Sales')+'</div>'+
+      /* Přísnější cíl s CI tasky vedle toho hlavního. Porovnává se pořád
+         s tím hlavním (to je ukazatel proti workplanu), ale CI task je to,
+         kam se míří — tak ať je vidět, jak daleko od něj jsme. */
+      (R.cilCi!=null?'<div class="kpi-s" style="margin-top:4px">'+
+        '<span class="tag '+(R.rezCi==null?'n':(R.rezCi<0?'r':'g'))+'" style="font-size:11px">'+
+        's CI taskem '+R.targetCI.toFixed(2)+' %</span> '+fE(R.cilCi)+
+        (R.rezCi!=null?' · '+(R.rezCi<0?'nad o '+fE(-R.rezCi):'rezerva '+fE(R.rezCi)):'')+
+        '</div>'
+       :'<div class="kpi-s" style="margin-top:4px;opacity:.7">CI task pro tenhle měsíc zadaný není</div>')+
+      '</div>'+
     '<div class="kpi a"><div class="kpi-l">Skutečnost</div>'+
       '<div class="kpi-v">'+(R.eur!=null?fE(R.eur):'—')+'</div>'+
       '<div class="kpi-s">'+(R.pct!=null?R.pct.toFixed(3)+' % ze Sales · ':'')+
@@ -92,31 +109,59 @@ function dashEstimate(R){
 /* kumulativ roku — kolik chybí nebo zbývá do součtu měsíčních cílů */
 function dashYear(curKey){
   const Y=yearSum();if(!Y.rows.length)return '';
+  /* Součet cílů s CI jde jen přes měsíce, které CI task mají. V řádku Celkem
+     pak stojí vedle skutečnosti za VŠECHNY měsíce — 162 010 € proti 729 923 €
+     se čte jako propadák, i když je to jen jiný počet měsíců. Proto se to
+     u obou součtů s CI napíše přímo do buňky, ne až pod tabulku. */
+  const ciPozn=(Y.ciN&&Y.ciN<Y.rows.length)
+    ?'<div style="font-size:11px;font-weight:400;color:var(--muted)">jen '+Y.ciN+' '+
+      (Y.ciN===1?'měsíc':(Y.ciN<5?'měsíce':'měsíců'))+'</div>':'';
   return '<div class="panel"><div class="ph"><span>Kumulativ 2026 — cíl vs skutečnost</span>'+
     '<span style="font-weight:600;opacity:.85">cíl v EUR = target % × Sales</span></div>'+
     '<div class="pb" style="overflow-x:auto">'+
     '<table class="tbl"><thead><tr><th>Měsíc</th><th class="num">Target %</th>'+
+    '<th class="num">Target + CI %</th>'+
     '<th class="num">Skutečnost %</th><th class="num">Cíl EUR</th>'+
-    '<th class="num">Skutečnost EUR</th><th class="num">Rezerva</th></tr></thead><tbody>'+
+    '<th class="num">Cíl + CI EUR</th>'+
+    '<th class="num">Skutečnost EUR</th><th class="num">Rezerva</th>'+
+    '<th class="num">Rezerva k CI</th></tr></thead><tbody>'+
     Y.rows.map(r=>'<tr class="'+(r.key===curKey?'hi':'')+'">'+
       '<td><b>'+r.label+'</b>'+(r.partial?' <span class="tag n">probíhá</span>':'')+'</td>'+
       '<td class="num" style="color:var(--muted)">'+r.target.toFixed(2)+' %</td>'+
+      '<td class="num" style="color:var(--muted)">'+
+        (r.targetCI!=null?r.targetCI.toFixed(2)+' %':'—')+'</td>'+
       '<td class="num"><b>'+r.pct.toFixed(3)+' %</b></td>'+
       '<td class="num" style="color:var(--muted)">'+fE(r.cil)+'</td>'+
+      '<td class="num" style="color:var(--muted)">'+(r.cilCi!=null?fE(r.cilCi):'—')+'</td>'+
       '<td class="num">'+fE(r.eur)+'</td>'+
       '<td class="num"><span class="tag '+(r.rez<0?'r':'g')+'">'+(r.rez<0?'▲ ':'▼ ')+
-        fE(Math.abs(r.rez))+'</span></td></tr>').join('')+
+        fE(Math.abs(r.rez))+'</span></td>'+
+      '<td class="num">'+(r.rezCi!=null?'<span class="tag '+(r.rezCi<0?'r':'g')+'">'+
+        (r.rezCi<0?'▲ ':'▼ ')+fE(Math.abs(r.rezCi))+'</span>':
+        '<span style="color:var(--muted)">—</span>')+'</td></tr>').join('')+
     '<tr style="border-top:2px solid var(--border)"><td><b>Celkem</b></td>'+
       '<td class="num" style="color:var(--muted)">'+Y.tgt.toFixed(3)+' %</td>'+
+      '<td class="num" style="color:var(--muted)">'+
+        (Y.ciTgt!=null?Y.ciTgt.toFixed(3)+' %':'—')+'</td>'+
       '<td class="num"><b>'+Y.pct.toFixed(3)+' %</b></td>'+
       '<td class="num" style="color:var(--muted)"><b>'+fE(Y.cil)+'</b></td>'+
+      '<td class="num" style="color:var(--muted)"><b>'+(Y.cilCi!=null?fE(Y.cilCi):'—')+'</b>'+ciPozn+'</td>'+
       '<td class="num"><b>'+fE(Y.eur)+'</b></td>'+
       '<td class="num"><span class="tag '+(Y.rez<0?'r':'g')+'"><b>'+(Y.rez<0?'▲ ':'▼ ')+
-        fE(Math.abs(Y.rez))+'</b></span></td></tr>'+
+        fE(Math.abs(Y.rez))+'</b></span></td>'+
+      '<td class="num">'+(Y.rezCi!=null?'<span class="tag '+(Y.rezCi<0?'r':'g')+'"><b>'+
+        (Y.rezCi<0?'▲ ':'▼ ')+fE(Math.abs(Y.rezCi))+'</b></span>'+ciPozn:
+        '<span style="color:var(--muted)">—</span>')+'</td></tr>'+
     '</tbody></table>'+
     '<div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7">'+
     (Y.rez>=0?'Proti součtu měsíčních cílů jsme <b>'+fE(Y.rez)+'</b> pod. ':
       'Proti součtu měsíčních cílů nám chybí <b>'+fE(-Y.rez)+'</b>. ')+
+    /* Součet cílů s CI se dělá jen přes měsíce, které CI task mají — jinak by
+       míchal přísný cíl s chybějícím. Proto se píše, kolika měsíců se týká. */
+    (Y.rezCi!=null?'<b>Cíl s CI taskem</b> je zadaný u '+Y.ciN+' z '+Y.rows.length+
+      ' měsíců; za ně dohromady '+fE(Y.cilCi)+' proti skutečnosti '+fE(Y.ciEur)+', tedy '+
+      (Y.rezCi>=0?'<b>'+fE(Y.rezCi)+'</b> pod. ':'<b>'+fE(-Y.rezCi)+'</b> nad. ')
+     :'<b>Cíl s CI taskem</b> není zadaný ani u jednoho měsíce. ')+
     'Rezerva je rozdíl cíle a skutečnosti — saving ve scrap reportu se může o pár set EUR lišit, '+
     'protože ho počítá až po uzávěrce.</div></div></div>'}
 

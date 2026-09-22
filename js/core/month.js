@@ -39,6 +39,10 @@ function pace(keys,k){
 /* cíl v EUR pro měsíc — null, když měsíc v tabulce chybí */
 function cilEur(k){const o=TGTM[k]||{};
   return o.t!=null&&o.sales?o.t/100*o.sales:null}
+/* Přísnější cíl včetně CI tasků. Není u každého měsíce — červen 2026 ho nemá
+   vůbec — takže všude, kde se ukazuje, musí umět chybět. */
+function cilCiEur(k){const o=TGTM[k]||{};
+  return o.ci!=null&&o.sales?o.ci/100*o.sales:null}
 
 /* skutečný scrap w/o tests za měsíc + odkud je
    pořadí zdrojů: ověřený scrap report → měsíční QAD export → denní reporty */
@@ -70,7 +74,7 @@ function soundSales(k){
 
 /* kompletní výsledek měsíce — vše, co jde spočítat ze stejného snímku dat */
 function monthResult(k){
-  const o=TGTM[k]||{},cil=cilEur(k),act=actEur(k);
+  const o=TGTM[k]||{},cil=cilEur(k),cilCi=cilCiEur(k),act=actEur(k);
   if(!cil&&!act)return null;
   const eur=act?act.eur:null;
   const pct=eur!=null&&o.sales?eur/o.sales*100:null;
@@ -82,6 +86,10 @@ function monthResult(k){
     /* kladná rezerva = pod cílem, záporná = nad cílem */
     rez:cil!=null&&eur!=null?cil-eur:null,
     pb:pct!=null&&o.t!=null?pct-o.t:null,
+    /* totéž proti přísnějšímu cíli s CI tasky */
+    cilCi:cilCi,
+    rezCi:cilCi!=null&&eur!=null?cilCi-eur:null,
+    pbCi:pct!=null&&o.ci!=null?pct-o.ci:null,
     prevKey:prev,prevLabel:prev?mLabel(prev):null,prevPct:pPct,
     /* u nesourodého předchozího měsíce nemá porovnání smysl — jeho procento
        je scrap za celý měsíc dělený snímkovými Sales */
@@ -98,5 +106,14 @@ function yearSum(){
   const rows=yearRows();
   const cil=rows.reduce((a,r)=>a+r.cil,0),eur=rows.reduce((a,r)=>a+r.eur,0);
   const sales=rows.reduce((a,r)=>a+r.sales,0);
+  /* Cíl s CI tasky se sčítá jen přes měsíce, které ho mají — jinak by součet
+     míchal přísný cíl s chybějícím a vyšel by nesmyslně nízký. Proto se vedle
+     součtu drží i to, kolika měsíců se týká. */
+  const ciR=rows.filter(r=>r.cilCi!=null);
+  const cilCi=ciR.reduce((a,r)=>a+r.cilCi,0);
+  const ciSales=ciR.reduce((a,r)=>a+r.sales,0),ciEur=ciR.reduce((a,r)=>a+r.eur,0);
   return{rows:rows,cil:cil,eur:eur,sales:sales,rez:cil-eur,
-    pct:sales?eur/sales*100:null,tgt:sales?cil/sales*100:null}}
+    pct:sales?eur/sales*100:null,tgt:sales?cil/sales*100:null,
+    ciN:ciR.length,cilCi:ciR.length?cilCi:null,
+    rezCi:ciR.length?cilCi-ciEur:null,
+    ciTgt:ciSales?cilCi/ciSales*100:null,ciEur:ciR.length?ciEur:null}}

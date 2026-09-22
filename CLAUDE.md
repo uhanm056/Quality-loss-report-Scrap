@@ -360,6 +360,39 @@ napíše do UI**:
 
 Pro červenec dá `EO` 100 474 € a `MDET` 100 475 € — přednost má report.
 
+#### Cíl s CI taskem
+
+Vedle hlavního cíle se všude, kde se cíl uvádí, píše i **přísnější cíl s CI
+tasky** (`TGTM[k].ci`, druhý blok listu `Target`):
+
+```
+cíl v EUR          = target % × Sales        (TGTM[k].t)
+cíl s CI v EUR     = target CI % × Sales     (TGTM[k].ci)
+```
+
+`monthResult()` k tomu vrací `cilCi`, `rezCi` a `pbCi`, `yearSum()` navíc
+`ciN`, `cilCi`, `rezCi`, `ciTgt`, `ciEur`. Ukazuje se to v:
+
+- **KPI Cíl v EUR** (Přehled scrapu) — pod hlavním cílem štítek `s CI taskem
+  0,64 %` s cílem v EUR a rezervou; obarvený podle toho, jestli jsme pod ním
+- **hlavičce měsíce** — věta „Proti přísnějšímu cíli s CI taskem … p.b. pod/nad"
+- **Kumulativu 2026** — sloupce `Target + CI %`, `Cíl + CI EUR`, `Rezerva k CI`
+- **Nastavení** — u Cíle v EUR druhý řádek `s CI …`
+- **Detailu projektu** — u targetu projektu (`PTGTM[k][projekt][1]`)
+
+**Porovnává se dál s hlavním targetem**, CI je jen vedle — hlavní target je to,
+co se vykazuje proti workplanu.
+
+**CI task nemá každý měsíc.** V ručně zapsaném `js/data/targets.js` chybí
+u ledna až června 2026; import z workplanu ho doplní všude. Kde chybí, je
+v tabulkách pomlčka a v KPI „CI task pro tenhle měsíc zadaný není".
+
+**Součet cílů s CI jde jen přes měsíce, které ho mají** — jinak by míchal
+přísný cíl s chybějícím a vyšel nesmyslně nízký. V řádku `Celkem` pak stojí
+vedle skutečnosti za *všechny* měsíce, takže `162 010 €` proti `729 923 €`
+vypadá jako propadák, i když je to jen jiný počet měsíců. **Proto se u obou
+součtů s CI píše „jen N měsíců" přímo do buňky**, ne až pod tabulku.
+
 **U probíhajícího měsíce (`part`) jsou scrap i Sales ke stejnému snímku dat.**
 Cíl v EUR je proto taky jen k tomu snímku. Prognóza z denního tempa je za celý
 měsíc, takže se s tímhle cílem **neporovnává** — v UI je to napsané a porovnává
