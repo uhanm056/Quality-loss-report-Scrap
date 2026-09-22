@@ -532,6 +532,40 @@ vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
 Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
 částkami ve stovkách byly všechny popisky `0k`.
 
+### Rozpad posledního dne
+
+Panel **Rozpad posledního dne** v Přehledu scrapu (`dashSplit` v `js/views/dash.js`).
+Pivot v QAD má tři denní bloky a **nesčítají se stejně**:
+
+| blok v pivotu | co to je |
+|---|---|
+| `Daily - TOP 10 reasons` | jen výběr deseti vad — na celý den se **nesečte** |
+| `Daily Scrap by platforms` | celý den po projektech |
+| `Daily Scrap by location` | celý den po pracovištích |
+
+Karta **Poslední den** ukazuje TOP 3 vady, takže vedle dvou rozpadů za celý den
+vypadala jako chybějící data. Proto je pod ní panel se **všemi třemi rozpady,
+každý s řádkem `Celkem`** — platformy, pracoviště i vady, všechny za týž den.
+V kartě je k TOP 3 dopsané, kolik ze dne dělají a že celý rozpad je níž.
+
+**Pracoviště je proklik** (`pickLoc`) — rozbalí se pod ním, co je pod ním ten
+den: **vady** (s projektem, na kterém vznikly) a **platformy**. Staví to
+`dayLocDetail(k,loc)` v `js/core/daily.js`; `lr` je klíčované
+`pracoviště¶kód§popis` a drží se po projektech, takže se prochází celá mapa
+a filtruje podle pracoviště. **Díly takhle vzít nejdou** — `it` se klíčuje jen
+číslem dílu, bez lokace.
+
+**Součet položek se od dne liší o pár eur a je to v pořádku.** Parser
+zaokrouhluje každou položku rozpadu zvlášť (`trim()`), takže u dvanácti
+pracovišť se součet rozejde až o 6 € — na zářijových datech je největší
+odchylka **4 €**. Hlásí se to proto **šedě jako zaokrouhlení**, dokud se rozdíl
+do počtu položek vejde (`tol = ceil(n/2)+1`); **červeně** až když je větší,
+protože to znamená, že se do rozpadu nevešly všechny položky (`trim()` má strop
+30 lokací / 40 vad / 60 kombinací na projekt).
+
+Panel respektuje přepínač **po dnech / po reportech** a v pondělním režimu
+ukazuje rozpad za pátek + víkend dohromady.
+
 ### Trend vad
 
 Počítá `js/core/defects.js`, ukazuje záložka **Trend vad**. Metrika je

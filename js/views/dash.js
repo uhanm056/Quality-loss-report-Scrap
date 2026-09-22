@@ -232,7 +232,16 @@ function dayColumn(ks,i,titul,prevR){
       '<td class="num">'+fE(v.e)+'</td>'+
       '<td class="num" style="color:var(--muted)">'+(tot?Math.round(v.e/tot*100):0)+' %</td>'+
       (prevR?'<td class="num">'+zm+'</td>':'')+
-      '</tr>'}).join('')+'</tbody></table>':
+      '</tr>'}).join('')+'</tbody></table>'+
+      /* TOP 3 samy o sobě na den nesedí — stejně jako blok TOP 10 reasons
+         v pivotu. Bez téhle věty to vedle rozpadu na platformy a pracoviště,
+         které za celý den jsou, vypadá jako chybějící data. */
+      (function(){const vse=dayBreak(k,'r').reduce((a,x)=>a+x[1].e,0);
+        const t3=top.reduce((a,x)=>a+x[1].e,0);
+        return '<div style="font-size:11px;color:var(--muted);margin-top:7px">'+
+          'TOP 3 dělají <b>'+fE(t3)+'</b> z '+fE(tot)+' '+uW('dne','reportu')+
+          (tot?' ('+Math.round(t3/tot*100)+' %)':'')+
+          '. Všechny vady jsou v rozpadu níž — dohromady '+fE(vse)+'.</div>'})():
       '<div class="empty" style="padding:18px">'+
         uW('Report za tenhle den nemá','Tenhle report nemá')+' rozpad na vady.</div>')+
     '</div>'}
@@ -256,6 +265,116 @@ function dashToday(m){
       uW('předchozímu dni','předchozímu reportu')+' — <b>nová</b> znamená, že '+
       uW('předchozí den','předchozí report')+' ta vada vůbec nebyla.</div>':'')+
     '</div></div>'}
+
+
+/* ── Rozpad posledního dne: platformy, pracoviště, vady ──────────────────
+   Pivot v QAD má tři bloky: TOP 10 reasons (jen výběr, nesečte se na den),
+   Daily Scrap by platforms a Daily Scrap by location (oba za celý den).
+   Kartа výš ukazuje TOP 3 vady, což samo o sobě na den nesedí — tady jsou
+   proto všechny tři rozpady s řádkem Celkem, aby šlo porovnat s Excelem
+   jedna ku jedné. Když se součet položek na den nesejde, napíše se to. */
+function splitTbl(rows,tot,typ,titul){
+  if(!rows.length)return '<div><div class="kpi-l" style="margin-bottom:7px">'+titul+
+    '</div><div class="empty" style="padding:16px">Bez rozpadu</div></div>';
+  const mx=Math.max.apply(null,rows.map(r=>Math.abs(r[1].e)))||1;
+  const sum=rows.reduce((a,r)=>a+r[1].e,0);
+  const klik=typ==='l';
+  return '<div><div class="kpi-l" style="margin-bottom:7px">'+titul+
+    (klik?' <span style="font-weight:600;text-transform:none;opacity:.75">— klikni na pracoviště</span>':'')+
+    '</div><table class="tbl"><thead><tr><th>'+
+    (typ==='p'?'Platforma':(typ==='l'?'Pracoviště':'Vada'))+'</th>'+
+    (typ==='l'?'<th>Kód</th>':(typ==='r'?'<th>Kód</th>':''))+
+    '<th class="num">Kusů</th><th class="num">EUR</th><th class="num">% dne</th>'+
+    '</tr></thead><tbody>'+
+    rows.map(function(r,i){
+      const v=r[1],op=klik&&openLoc===r[0];
+      const nm=typ==='p'?projLink(r[0]):(typ==='l'?locName(r[0]):rsnName(r[0]));
+      const kod=typ==='l'?r[0]:(typ==='r'?rsnCode(r[0]):'');
+      let out='<tr class="'+(op?'sel':(i===0?'hi':''))+(klik?' clik':'')+'"'+
+        (klik?' onclick="pickLoc(\''+esc(r[0])+'\')" title="co je pod tímhle pracovištěm"':'')+'>'+
+        '<td><b>'+nm+'</b>'+bar2(v.e,mx,i===0)+'</td>'+
+        (kod||typ==='r'?'<td>'+(kod?'<span class="code">'+escH(kod)+'</span>':
+          '<span style="color:var(--muted)">—</span>')+'</td>':'')+
+        '<td class="num" style="color:var(--muted)">'+fN(v.q)+'</td>'+
+        '<td class="num"><b>'+fE(v.e)+'</b></td>'+
+        '<td class="num" style="color:var(--muted)">'+(tot?Math.round(v.e/tot*100):0)+' %</td></tr>';
+      if(op)out+=locDetail(r[0],v.e,typ==='l'?4:3);
+      return out}).join('')+
+    '<tr style="border-top:2px solid var(--border)"><td><b>Celkem</b></td>'+
+      (typ==='l'||typ==='r'?'<td></td>':'')+
+      '<td class="num" style="color:var(--muted)"><b>'+
+        fN(rows.reduce((a,r)=>a+r[1].q,0))+'</b></td>'+
+      '<td class="num"><b>'+fE(sum)+'</b></td>'+
+      '<td class="num" style="color:var(--muted)"><b>'+(tot?Math.round(sum/tot*100):0)+' %</b></td>'+
+      '</tr></tbody></table>'+
+    /* Parser zaokrouhluje každou položku rozpadu zvlášť (`trim()`), takže
+       součet položek se od dne liší o pár eur — u 12 pracovišť až o 6 €.
+       To je zaokrouhlení, ne chybějící data, a nesmí to hlásit červeně.
+       Červeně se hlásí až rozdíl, který se rozpočtem položek vysvětlit nedá —
+       to znamená, že se do rozpadu nevešly všechny (`trim()` má strop). */
+    (function(){const d=sum-tot,tol=Math.ceil(rows.length/2)+1;
+      if(!d)return '';
+      if(Math.abs(d)<=tol)return '<div style="font-size:11px;color:var(--muted);margin-top:6px">'+
+        'Součet položek je o '+fE(Math.abs(d))+' '+(d<0?'nižší':'vyšší')+' než celý '+
+        uW('den','report')+' ('+fE(tot)+') — položky se zaokrouhlují jednotlivě.</div>';
+      return '<div style="font-size:11px;color:#C0392B;margin-top:6px">'+
+        'Součet položek je o '+fE(Math.abs(d))+' '+(d<0?'nižší':'vyšší')+' než celý '+
+        uW('den','report')+' ('+fE(tot)+') — do rozpadu se vejde jen omezený počet '+
+        'položek, zbytek se do něj nevešel.</div>'})()+
+    '</div>'}
+
+/* pruh v tabulce rozpadu — u záporných oprav rozhoduje absolutní hodnota */
+function bar2(v,mx,t){return '<div class="minib"><div class="minif '+(t?'top':'')+
+  '" style="width:'+Math.round(Math.abs(v)/mx*100)+'%"></div></div>'}
+
+/* rozbalené pracoviště — co pod ním ten den je */
+function locDetail(loc,locEur,cols){
+  const D=dayLocDetail(openDayKey,loc);
+  const mini=(rows,titul,vada)=>rows.length
+    ? '<div><div class="kpi-l" style="margin-bottom:5px">'+titul+'</div><table class="tbl">'+
+      rows.slice(0,8).map(function(r){const v=r[1];
+        const pr=vada?topProj(v):null,cd=vada?rsnCode(r[0]):'';
+        return '<tr><td><b>'+(vada?rsnName(r[0]):projLink(r[0]))+'</b>'+
+          (cd?' <span class="code">'+escH(cd)+'</span>':'')+
+          (pr?' <span style="color:var(--muted);font-size:11px">'+escH(pr)+'</span>':'')+'</td>'+
+          '<td class="num" style="color:var(--muted)">'+fN(v.q)+' ks</td>'+
+          '<td class="num">'+fE(v.e)+'</td>'+
+          '<td class="num" style="color:var(--muted)">'+
+            (locEur?Math.round(v.e/locEur*100):0)+' %</td></tr>'}).join('')+
+      '</table></div>'
+    : '<div><div class="kpi-l" style="margin-bottom:5px">'+titul+'</div>'+
+      '<div style="font-size:12px;color:var(--muted)">bez detailu</div></div>';
+  return '<tr><td colspan="'+cols+'" style="background:var(--bg)">'+
+    '<div style="padding:8px 2px 4px"><b>'+escH(locName(loc))+'</b> '+
+    '<span class="code">'+escH(loc)+'</span> · '+fE(D.e)+' · '+fN(D.q)+' ks'+
+    ' &nbsp;<button class="btn" onclick="pickLoc(null)">✕ zavřít</button></div>'+
+    '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;padding:0 2px 8px">'+
+    mini(D.r,'Vady na tomhle pracovišti',true)+
+    mini(D.p,'Platformy na tomhle pracovišti',false)+
+    '</div></td></tr>'}
+
+/* jednotka, ke které se rozpad váže — drží se, aby ji locDetail() nemusel dostávat */
+let openDayKey=null;
+
+function dashSplit(m){
+  const ks=viewDays(m);if(!ks.length)return '';
+  const k=ks[ks.length-1];openDayKey=k;
+  const tot=dayEur(k),qty=dayQty(k);
+  return '<div class="panel"><div class="ph">'+
+    '<span>Rozpad '+uW('posledního dne','posledního reportu')+' — '+denLabel(k)+
+    ' &nbsp;<span style="font-weight:600;opacity:.8">· '+fE(tot)+' · '+fN(qty)+' ks'+
+    '</span></span>'+dayTools()+'</div>'+
+    '<div class="pb"><div style="display:grid;grid-template-columns:1fr 1.15fr;gap:22px" class="spl">'+
+    splitTbl(dayProjects(k),tot,'p','Platformy')+
+    splitTbl(dayBreak(k,'l'),tot,'l','Pracoviště')+
+    '</div>'+
+    '<div style="margin-top:22px">'+splitTbl(dayBreak(k,'r'),tot,'r','Vady (reason code)')+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7">'+
+    'Všechny tři rozpady jsou za '+uW('týž den','týž report')+
+    ' a sčítají se na <b>'+fE(tot)+'</b> — sedí na bloky <i>Daily Scrap by platforms</i> '+
+    'a <i>Daily Scrap by location</i> v pivotu. Blok <i>TOP 10 reasons</i> v Excelu je '+
+    'jen výběr, na celý den se proto nesečte; tady jsou vady všechny.'+
+    '</div></div></div>'}
 
 /* ── Den po dni: tabulka s rozbalením ────────────────────────────────── */
 function dayMini(rows,tot,titul,typ){
@@ -398,7 +517,7 @@ function renderDash(){
   if(!R){box.innerHTML='<div class="panel"><div class="pb"><div class="empty">'+
     '<b>Pro '+mLabel(m)+' nemám ani target, ani scrap.</b><br>'+
     'Doplňte měsíc v <b>Nastavení</b> nebo nahrajte denní report.</div></div></div>';return}
-  box.innerHTML=dashMonth(R)+dashToday(m)+dashEstimate(R)+dashYear(m)+dashDaily(m,R)+dashDays(m);
+  box.innerHTML=dashMonth(R)+dashToday(m)+dashSplit(m)+dashEstimate(R)+dashYear(m)+dashDaily(m,R)+dashDays(m);
 
   const ks=daysOf(m);if(!ks.length)return;
   const P=pace(ks,m),cil=R.cil,limit=cil!=null&&P.ok?cil/P.exp:null;
