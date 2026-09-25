@@ -138,6 +138,23 @@ function projQuarter(mSel,p){
     /* kvartál je neúplný, když mu chybí měsíc kvůli běžícímu měsíci */
     curPart:b.ms.length<3,prevPart:a.ms.length<3}}
 
+/* Vybraný měsíc projektu proti předchozímu — bezprostřednější než kvartál.
+   Metrika se volí stejně jako u kvartálu: procento ze Sales, když je zná oba
+   měsíce, jinak EUR. Pozor na **probíhající měsíc** — ten je jen k dnešku,
+   takže v EUR vypadá vždycky jako velké zlepšení; příznak `part` to říká UI. */
+function projMoM(mSel,p){
+  const prev=+mSel-1;
+  if(prev<1)return null;                     /* leden nemá předchozí měsíc */
+  const a=MDET[prev]&&MDET[prev][p],b=MDET[mSel]&&MDET[mSel][p];
+  if(!a||!b)return null;
+  const sa=pSales(prev,p),sb=pSales(mSel,p);
+  const pa=sa?a.wo/sa*100:null,pb=sb?b.wo/sb*100:null;
+  return{m:+mSel,prev:prev,eur:b.wo,prevEur:a.wo,pct:pb,prevPct:pa,
+    dEur:b.wo-a.wo,
+    dRel:a.wo?(b.wo-a.wo)/a.wo*100:null,
+    dPb:(pa!=null&&pb!=null)?pb-pa:null,
+    part:+mSel===mdRunning()}}
+
 /* všechny měsíce z tabulky targetů, od nejstaršího — pro kumulativ */
 function yearRows(){
   return Object.keys(TGTM).filter(k=>TGTM[k].t!=null&&TGTM[k].sales).sort()
