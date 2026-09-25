@@ -79,6 +79,32 @@ function rsnPanel(ks,ser,key,projEur){
     '<div class="kpi-s">'+(tr.pct!=null&&tr.a?'poslední dny '+fE(tr.b)+' proti '+fE(tr.a)+
       ' ('+(tr.pct>0?'+':'')+tr.pct.toFixed(0)+' %)':'na zařazení trendu je málo dnů')+'</div></div></div>'}
 
+/* ── Dlaždice s kvartálním trendem ────────────────────────────────────
+   Počítá `projQuarter()` v js/core/month.js. Hlavní číslo je změna
+   v procentech ze Sales, když je aplikace zná u obou kvartálů; jinak
+   změna průměrného scrapu na měsíc v EUR. Do podřádku se vždycky napíše,
+   které měsíce se počítaly — probíhající měsíc v nich není. */
+const mList=ms=>ms.map(m=>MO3[m-1].toLowerCase()).join('+');
+
+function kvartalKpi(Q,mm){
+  if(!Q)return '<div class="kpi b"><div class="kpi-l">Kvartální trend</div>'+
+    '<div class="kpi-v" style="font-size:19px">—</div>'+
+    '<div class="kpi-s">'+(mm&&qOf(mm)===1?'předchozí kvartál je loňský a ten v datech nemám'
+      :'na porovnání kvartálů nemám dost měsíců')+'</div></div>';
+  const pb=Q.dPb!=null;
+  const hor=pb?Q.dPb>0:Q.dPer>0;              /* kladná změna = zhoršení */
+  const val=pb?fPB(Q.dPb)
+    :(Q.pctPer!=null?(Q.pctPer>0?'+':'−')+Math.abs(Q.pctPer).toFixed(0)+' %':'—');
+  return '<div class="kpi '+(hor?'r':'g')+'">'+
+    '<div class="kpi-l">'+QLBL[Q.cur.q]+' proti '+QLBL[Q.prev.q]+'</div>'+
+    '<div class="kpi-v">'+val+'</div>'+
+    '<div class="kpi-s">'+(pb
+      ? Q.cur.pct.toFixed(2)+' % ze Sales proti '+Q.prev.pct.toFixed(2)+' %'
+      : fE(Math.round(Q.cur.per))+' / měsíc proti '+fE(Math.round(Q.prev.per)))+'</div>'+
+    '<div class="kpi-s" style="margin-top:3px;opacity:.8">'+
+      QLBL[Q.cur.q]+' '+mList(Q.cur.ms)+' · '+QLBL[Q.prev.q]+' '+mList(Q.prev.ms)+
+      (Q.curPart?' · probíhající měsíc se nepočítá':'')+'</div></div>'}
+
 function renderProj(){
   const box=document.getElementById('projBody');
   const mm=curMonth?+curMonth.slice(5,7):null;
@@ -127,6 +153,7 @@ function renderProj(){
   const wL=L[0],wR=R[0];
   const pt=mm?pTgt(mm,curProj):null,ps=mm?pSales(mm,curProj):null;
   const act=ps?me.e/ps*100:null;
+  const QT=mm?projQuarter(mm,curProj):null;
 
   const srcNote=SRC==='day'
     ? 'Zdroj: denní reporty · '+ks.length+' dnů · průměr '+fE(per)+' / den'
@@ -135,7 +162,7 @@ function renderProj(){
   box.innerHTML=
   '<div style="display:flex;gap:8px;flex-wrap:wrap">'+projs.map(p=>
     '<button class="chip b '+(p[0]===curProj?'on':'')+'" onclick="pickProj(\''+esc(p[0])+'\')">'+p[0]+'</button>').join('')+'</div>'+
-  '<div class="grid4">'+
+  '<div class="grid5">'+
   '<div class="kpi b"><div class="kpi-l">'+curProj+' · '+MN[mm-1]+'</div><div class="kpi-v">'+fE(me.e)+'</div>'+
     '<div class="kpi-s">'+Math.round(me.e/tot*100)+' % scrapu závodu</div></div>'+
   '<div class="kpi '+(act&&pt&&pt[0]!=null&&act>pt[0]?'r':'g')+'"><div class="kpi-l">% ze Sales projektu</div>'+
@@ -148,7 +175,8 @@ function renderProj(){
     '<div class="kpi-s">'+(wL?fE(wL[1].e)+' · '+Math.round(wL[1].e/me.e*100)+' % projektu':'bez rozpadu')+'</div></div>'+
   '<div class="kpi r"><div class="kpi-l">Hlavní příčina</div>'+
     '<div class="kpi-v" style="font-size:19px">'+(wR?wR[0].split('§')[1]:'—')+'</div>'+
-    '<div class="kpi-s">'+(wR?fE(wR[1].e)+' · '+fN(wR[1].q)+' ks':'bez rozpadu')+'</div></div></div>'+
+    '<div class="kpi-s">'+(wR?fE(wR[1].e)+' · '+fN(wR[1].q)+' ks':'bez rozpadu')+'</div></div>'+
+  kvartalKpi(QT,mm)+'</div>'+
   '<div style="font-size:12px;color:var(--muted);padding:2px">'+srcNote+'</div>'+
   (SRC==='day'?'<div class="panel"><div class="ph">'+
     '<span>Denní vývoj — '+curProj+

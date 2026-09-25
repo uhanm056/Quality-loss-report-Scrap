@@ -96,6 +96,48 @@ function monthResult(k){
     prevStale:!!(prev&&salesStale(prev)),
     prevEur:pAct?pAct.eur:null,base:soundSales(k)}}
 
+/* ── Kvartální trend projektu ──────────────────────────────────────────
+   Scrap po projektech je v `MDET` za každý měsíc, ale Sales po projektech
+   (`PSAL`) jen za některé — po importu workplanu ne vždy za celý rok.
+   Proto se porovnává primárně v **EUR** a procento ze Sales se přidá jen
+   tehdy, když ho znají oba kvartály za všechny počítané měsíce.
+
+   **Probíhající kalendářní měsíc se vynechá** — stejné pravidlo jako
+   u trendu vad: useknutý měsíc by vypadal jako zlepšení. Kvartály tím
+   ale můžou mít různý počet měsíců (Q3 za čvc+srp proti celému Q2),
+   takže se v EUR porovnává **průměr na měsíc**, ne holý součet. */
+const qOf=m=>Math.floor((+m-1)/3)+1;
+const qMonths=q=>[q*3-2,q*3-1,q*3];
+const QLBL=['','Q1','Q2','Q3','Q4'];
+/* `MDET` drží jen rok 2026 (viz mdKey) — proto se probíhající měsíc
+   vynechává jen tehdy, když zrovna ten rok běží. */
+const mdRunning=()=>{const d=new Date();
+  return d.getFullYear()===2026?d.getMonth()+1:0};
+
+function projQuarter(mSel,p){
+  const cur=qOf(mSel),prev=cur-1;
+  if(prev<1)return null;                    /* Q4 loňska v MDET není */
+  const run=mdRunning();
+  const part=function(q){
+    const ms=qMonths(q).filter(m=>m!==run&&MDET[m]&&MDET[m][p]);
+    if(!ms.length)return null;
+    const eur=ms.reduce((a,m)=>a+(MDET[m][p].wo||0),0);
+    const sal=ms.map(m=>pSales(m,p));
+    const full=sal.every(x=>x);
+    const stot=full?sal.reduce((a,x)=>a+x,0):null;
+    return{q:q,ms:ms,eur:eur,per:eur/ms.length,
+      sales:stot,pct:stot?eur/stot*100:null}};
+  const a=part(prev),b=part(cur);
+  if(!a||!b)return null;
+  return{cur:b,prev:a,
+    /* v EUR na měsíc — kvartály můžou mít různý počet měsíců */
+    dPer:b.per-a.per,
+    pctPer:a.per?(b.per-a.per)/a.per*100:null,
+    /* v procentech ze Sales — jen když je zná obojí */
+    dPb:(b.pct!=null&&a.pct!=null)?b.pct-a.pct:null,
+    /* kvartál je neúplný, když mu chybí měsíc kvůli běžícímu měsíci */
+    curPart:b.ms.length<3,prevPart:a.ms.length<3}}
+
 /* všechny měsíce z tabulky targetů, od nejstaršího — pro kumulativ */
 function yearRows(){
   return Object.keys(TGTM).filter(k=>TGTM[k].t!=null&&TGTM[k].sales).sort()
