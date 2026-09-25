@@ -532,6 +532,38 @@ vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
 Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
 částkami ve stovkách byly všechny popisky `0k`.
 
+### Kvartální trend projektu
+
+Pátá dlaždice v **Detailu projektu** — „Q3 proti Q2". Počítá `projQuarter(m,p)`
+v `js/core/month.js`, vykresluje `kvartalKpi()` v `js/views/project.js`.
+Kvartál se bere podle **vybraného měsíce**, porovnává se s tím předchozím.
+
+**Metrika se volí podle toho, co je k dispozici.** Scrap po projektech je
+v `MDET` za každý měsíc, ale Sales po projektech (`PSAL`) **ne vždy za celý
+rok** — v ručně zapsaném `js/data/targets.js` jsou jen červen až srpen. Proto:
+
+| | kdy |
+|---|---|
+| **změna v p.b.** (% ze Sales) | když Sales zná **oba** kvartály za všechny počítané měsíce |
+| **změna průměru na měsíc v EUR** | jinak |
+
+**Probíhající kalendářní měsíc se vynechá** — stejné pravidlo jako u trendu
+vad, useknutý měsíc by vypadal jako zlepšení. Kvartály tím ale můžou mít různý
+počet měsíců (Q3 za čvc+srp proti celému Q2), takže se v EUR porovnává
+**průměr na měsíc, ne holý součet** — jinak by dva měsíce proti třem vyšly
+vždycky jako velké zlepšení. Do podřádku se proto **vždycky píše, které měsíce
+se počítaly**.
+
+`MDET` drží jen rok 2026 (viz `mdKey`), takže `mdRunning()` vynechává
+probíhající měsíc jen tehdy, když zrovna ten rok běží. Měsíc v **Q1** nemá
+s čím porovnávat — předchozí kvartál je loňský a ten v datech není; dlaždice
+to napíše místo čísla.
+
+Ověřeno na zapsaném základu: G463 M za srpen dá Q3 = čvc+srp = **87 424 €**
+(43 712 € na měsíc) proti Q2 = dub+kvě+čvn = **130 059 €** (43 353 € na měsíc),
+tedy +1 %. Se Sales za oba kvartály totéž vyjde jako **+0,14 p.b.**
+(0,72 % proti 0,58 %).
+
 ### Rozpad posledního dne
 
 Panel **Rozpad posledního dne** v Přehledu scrapu (`dashSplit` v `js/views/dash.js`).
