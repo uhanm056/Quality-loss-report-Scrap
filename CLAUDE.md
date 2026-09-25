@@ -532,37 +532,46 @@ vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
 Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
 částkami ve stovkách byly všechny popisky `0k`.
 
-### Kvartální trend projektu
+### Trend projektu — měsíc a kvartál
 
-Pátá dlaždice v **Detailu projektu** — „Q3 proti Q2". Počítá `projQuarter(m,p)`
-v `js/core/month.js`, vykresluje `kvartalKpi()` v `js/views/project.js`.
-Kvartál se bere podle **vybraného měsíce**, porovnává se s tím předchozím.
+Pátá dlaždice v **Detailu projektu**. Hlavní číslo je **vybraný měsíc proti
+předchozímu** (`projMoM`), pod ním jako druhý, klidnější horizont **kvartál
+proti kvartálu** (`projQuarter`) — obojí v `js/core/month.js`, vykresluje
+`trendKpi()` v `js/views/project.js`. Měsíc sám o sobě skáče, kvartál ukáže,
+kam to jde.
 
-**Metrika se volí podle toho, co je k dispozici.** Scrap po projektech je
-v `MDET` za každý měsíc, ale Sales po projektech (`PSAL`) **ne vždy za celý
-rok** — v ručně zapsaném `js/data/targets.js` jsou jen červen až srpen. Proto:
+**Metrika se volí podle toho, co je k dispozici** — u obou stejně:
 
 | | kdy |
 |---|---|
-| **změna v p.b.** (% ze Sales) | když Sales zná **oba** kvartály za všechny počítané měsíce |
-| **změna průměru na měsíc v EUR** | jinak |
+| **změna v p.b.** (% ze Sales) | když Sales zná **obě** období za všechny počítané měsíce |
+| **změna v %** (EUR) | jinak — u měsíce z holých EUR, u kvartálu z průměru na měsíc |
 
-**Probíhající kalendářní měsíc se vynechá** — stejné pravidlo jako u trendu
-vad, useknutý měsíc by vypadal jako zlepšení. Kvartály tím ale můžou mít různý
-počet měsíců (Q3 za čvc+srp proti celému Q2), takže se v EUR porovnává
-**průměr na měsíc, ne holý součet** — jinak by dva měsíce proti třem vyšly
-vždycky jako velké zlepšení. Do podřádku se proto **vždycky píše, které měsíce
-se počítaly**.
+Scrap po projektech je v `MDET` za každý měsíc, ale Sales po projektech
+(`PSAL`) **ne vždy za celý rok** — v ručně zapsaném `js/data/targets.js` jsou
+jen červen až srpen.
+
+**Procento ze Sales a EUR si můžou protiřečit a procento má přednost.**
+G463 M má v srpnu 34 767 € proti červencovým 52 657 €, tedy **−34 % v EUR** —
+jenže Sales spadly ze 7 674 411 € na 4 482 697 €, o 42 %. Ze Sales je to
+**0,776 % proti 0,686 %, tedy +0,09 p.b. HŮŘ**, a dlaždice je proto správně
+červená. Kdyby se barvilo podle EUR, hlásila by zlepšení tam, kde se projekt
+proti objemu výroby zhoršil.
+
+**Probíhající měsíc je jen k dnešku**, takže v EUR vypadá vždycky jako velké
+zlepšení — u něj se to do dlaždice napíše (`part`). V procentech ze Sales to
+problém není: scrap i Sales jsou ke stejnému snímku.
+
+**Kvartál vynechává probíhající kalendářní měsíc** — stejné pravidlo jako
+u trendu vad, useknutý měsíc by vypadal jako zlepšení. Kvartály tím ale můžou
+mít různý počet měsíců (Q3 za čvc+srp proti celému Q2), takže se v EUR
+porovnává **průměr na měsíc, ne holý součet** — dva měsíce proti třem by jinak
+vyšly vždycky jako velké zlepšení. Do podřádku se proto vždycky píše, které
+měsíce se počítaly.
 
 `MDET` drží jen rok 2026 (viz `mdKey`), takže `mdRunning()` vynechává
-probíhající měsíc jen tehdy, když zrovna ten rok běží. Měsíc v **Q1** nemá
-s čím porovnávat — předchozí kvartál je loňský a ten v datech není; dlaždice
-to napíše místo čísla.
-
-Ověřeno na zapsaném základu: G463 M za srpen dá Q3 = čvc+srp = **87 424 €**
-(43 712 € na měsíc) proti Q2 = dub+kvě+čvn = **130 059 €** (43 353 € na měsíc),
-tedy +1 %. Se Sales za oba kvartály totéž vyjde jako **+0,14 p.b.**
-(0,72 % proti 0,58 %).
+probíhající měsíc jen tehdy, když zrovna ten rok běží. **Leden** nemá předchozí
+měsíc ani kvartál (ten by byl loňský) — dlaždice to napíše místo čísla.
 
 ### Rozpad posledního dne
 
