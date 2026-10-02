@@ -5,14 +5,60 @@
 
 function bar(v,mx,t){return '<div class="minib"><div class="minif '+(t?'top':'')+
   '" style="width:'+Math.round(v/mx*100)+'%"></div></div>'}
-function tblLoc(rows,tot){if(!rows.length)return '<div class="empty" style="padding:18px">Bez detailu</div>';
+/* Tabulka pracovišť. S denními daty je každý řádek proklik na to, co pod tím
+   pracovištěm je — vady a **díly**. Sloupec EUR/ks je tu schválně: u montáže
+   průměr 31 €/ks napoví, že to nejsou hotové sestavy, ale komponenty. */
+function tblLoc(rows,tot,klik,m,proj){
+  if(!rows.length)return '<div class="empty" style="padding:18px">Bez detailu</div>';
   const mx=rows[0][1].e;
   return '<table class="tbl"><thead><tr><th>Pracoviště</th><th>Kód</th><th class="num">Kusů</th>'+
-    '<th class="num">EUR</th><th class="num">% projektu</th></tr></thead><tbody>'+
-    rows.map((r,i)=>'<tr class="'+(i===0?'hi':'')+'"><td><b>'+locName(r[0])+'</b>'+bar(r[1].e,mx,i===0)+'</td>'+
-      '<td><span class="code">'+r[0]+'</span></td><td class="num">'+fN(r[1].q)+'</td>'+
-      '<td class="num">'+fE(r[1].e)+'</td><td class="num" style="color:var(--muted)">'+
-      Math.round(r[1].e/tot*100)+' %</td></tr>').join('')+'</tbody></table>'}
+    '<th class="num">EUR</th><th class="num">EUR / ks</th><th class="num">% projektu</th>'+
+    (klik?'<th style="width:96px"></th>':'')+'</tr></thead><tbody>'+
+    rows.map(function(r,i){const v=r[1],op=klik&&curPLoc===r[0];
+      let out='<tr class="'+(op?'sel':(i===0?'hi':''))+(klik?' clik':'')+'"'+
+      (klik?' onclick="pickPLoc(\''+esc(r[0])+'\')" title="co je pod tímhle pracovištěm"':'')+'>'+
+      '<td><b>'+locName(r[0])+'</b>'+bar(v.e,mx,i===0)+'</td>'+
+      '<td><span class="code">'+escH(r[0])+'</span></td><td class="num">'+fN(v.q)+'</td>'+
+      '<td class="num">'+fE(v.e)+'</td>'+
+      '<td class="num"'+(v.q?'':' style="color:var(--muted)"')+'>'+(v.q?fE(v.e/v.q):'—')+'</td>'+
+      '<td class="num" style="color:var(--muted)">'+Math.round(v.e/tot*100)+' %</td>'+
+      (klik?'<td class="num"><span class="tag '+(op?'b':'n')+'" style="font-size:11px">'+
+        (op?'✓ rozbaleno':'🔍 co je pod')+'</span></td>':'')+'</tr>';
+      if(op)out+=locRozpad(m,proj,r[0],v);
+      return out}).join('')+'</tbody></table>'}
+
+/* rozbalené pracoviště — vady a díly pod ním */
+function locRozpad(m,proj,loc,row){
+  const D=projLocDetail(m,proj,loc);
+  const mini=(rows,titul,dil)=>rows.length
+    ? '<div><div class="kpi-l" style="margin-bottom:5px">'+titul+'</div><table class="tbl">'+
+      rows.slice(0,8).map(function(r){const v=r[1];
+        const nm=dil?r[0]:rsnName(r[0]),cd=dil?'':rsnCode(r[0]);
+        return '<tr><td>'+(dil?'<span class="code">'+escH(nm)+'</span>'
+            :'<b>'+escH(nm)+'</b>'+(cd?' <span class="code">'+escH(cd)+'</span>':''))+'</td>'+
+          '<td class="num" style="color:var(--muted)">'+fN(v.q)+' ks</td>'+
+          '<td class="num">'+fE(v.e)+'</td>'+
+          '<td class="num"'+(v.q?'':' style="color:var(--muted)"')+'>'+
+            (v.q?fE(v.e/v.q)+' / ks':'—')+'</td></tr>'}).join('')+
+      '</table></div>'
+    : '<div><div class="kpi-l" style="margin-bottom:5px">'+titul+'</div>'+
+      '<div style="font-size:12px;color:var(--muted)">bez detailu</div></div>';
+  return '<tr><td colspan="7" style="background:var(--bg)">'+
+    '<div style="padding:8px 2px 4px"><b>'+escH(locName(loc))+'</b> '+
+    '<span class="code">'+escH(loc)+'</span> · '+fE(row.e)+' · '+fN(row.q)+' ks'+
+    (row.q?' · <b>'+fE(row.e/row.q)+' na kus</b>':'')+
+    ' &nbsp;<button class="btn" onclick="pickPLoc(null)">✕ zavřít</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 2px 8px">'+
+    mini(D.r,'Vady na tomhle pracovišti',false)+
+    mini(D.it,'Díly na tomhle pracovišti',true)+
+    '</div>'+
+    /* `li` plní až parser od 2. 10. 2026 — u dřív uložených dnů chybí
+       a prázdný seznam by se dal splést s „žádné díly" */
+    (!D.maDily?'<div class="warnbox" style="margin:0 0 10px"><span style="font-size:26px">📦</span>'+
+      '<div><b>Rozpad na díly tenhle měsíc ještě nemá.</b> Ukládá se až od novější '+
+      'verze — nahrajte měsíční report znovu v záložce <b>Data &amp; import</b> '+
+      'a díly se doplní.</div></div>':'')+
+    '</td></tr>'}
 /* Tabulka příčin. S denními daty je každý řádek proklik na denní vývoj té vady
    (`klik` = kurzor a hover, `sel` = zrovna vybraná). Bez denních dat se neklikat
    nedá — měsíční MDET drží jen součty za celý měsíc, žádné dny v něm nejsou. */
@@ -213,8 +259,14 @@ function renderProj(){
     (rsnSer?rsnPanel(ks,rsnSer,rsnSel,me.e):''):'')+
   '<div style="font-size:12px;color:var(--muted);padding:2px 2px 0"><b>% projektu</b> = podíl na scrapu '+
     curProj+' za '+MN[mm-1]+' ('+fE(me.e)+').</div>'+
-  '<div class="two"><div class="panel"><div class="ph"><span>Pracoviště</span></div>'+
-    '<div class="pb" style="overflow-x:auto">'+tblLoc(L,me.e)+'</div></div>'+
+  '<div class="two"><div class="panel"><div class="ph"><span>Pracoviště</span>'+
+    (SRC==='day'?'<span style="font-weight:600;opacity:.85">klikni → vady a díly</span>':'')+
+    '</div>'+
+    '<div class="pb" style="overflow-x:auto">'+tblLoc(L,me.e,SRC==='day',curMonth,curProj)+
+    (SRC==='day'?'':'<div style="font-size:12px;color:var(--muted);margin-top:9px">'+
+      'Rozpad pracoviště na vady a díly jde ukázat jen z denních reportů. '+
+      'Vady podle pracoviště jsou i tak v tabulce <b>Top scrap — pracoviště × příčina</b> níž.</div>')+
+    '</div></div>'+
     '<div class="panel"><div class="ph"><span>Příčiny (reason code)</span>'+
     (SRC==='day'?'<span style="font-weight:600;opacity:.85">klikni na vadu → denní vývoj</span>':'')+
     '</div>'+
@@ -251,3 +303,5 @@ function renderProj(){
 
 /* výběr vady je přepínač — druhý klik na tutéž ji zase zruší */
 window.pickRsn=k=>{curRsn=(k&&curRsn!==k)?k:null;renderProj()};
+/* rozbalené pracoviště v Detailu projektu — druhý klik zavře */
+window.pickPLoc=c=>{curPLoc=(c&&curPLoc!==c)?c:null;renderProj()};

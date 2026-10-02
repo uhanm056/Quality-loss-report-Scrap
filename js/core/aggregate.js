@@ -28,5 +28,25 @@ const projRsnDays=(m,p,key)=>daysOf(m).map(k=>{
   const R=((DB[k].p||{})[p]||{}).r||{},o={e:0,q:0};
   Object.entries(R).forEach(([n,v])=>{if(rsnKey(n)===key){o.e+=v.e;o.q+=v.q}});
   return o});
+/* Co je pod jedním pracovištěm u projektu za měsíc — vady a díly.
+   `lr` i `li` se drží po projektech a klíčují se 'lokace¶…', takže se prochází
+   celá mapa a filtruje podle lokace. `li` plní až novější parser, u starších
+   uložených dnů chybí — proto `maDily`, aby UI vědělo, že nejde o nulu. */
+function projLocDetail(m,p,loc){
+  const rs={},its={};let e=0,q=0,maDily=false;
+  daysOf(m).forEach(k=>{const P=(DB[k].p||{})[p];if(!P)return;
+    const L=(P.l||{})[loc];
+    if(L){e+=L.e;q+=L.q}
+    const ber=(src,cil,klic)=>Object.entries(src||{}).forEach(([n,v])=>{
+      const t=String(n),i=t.indexOf('¶');
+      if(i<0||t.slice(0,i)!==loc)return;
+      const key=klic(t.slice(i+1)),x=cil[key]=cil[key]||{e:0,q:0};
+      x.e+=v.e;x.q+=v.q});
+    ber(P.lr,rs,rsnKey);
+    if(P.li&&Object.keys(P.li).length){maDily=true;ber(P.li,its,x=>x)}});
+  return{loc:loc,e:e,q:q,maDily:maDily,
+    r:Object.entries(rs).sort((a,b)=>b[1].e-a[1].e),
+    it:Object.entries(its).sort((a,b)=>b[1].e-a[1].e)}}
+
 const hasDetail=m=>daysOf(m).some(k=>DB[k].p&&Object.keys(DB[k].p).length);
 const daysNoDetail=m=>daysOf(m).filter(k=>!(DB[k].p&&Object.keys(DB[k].p).length));

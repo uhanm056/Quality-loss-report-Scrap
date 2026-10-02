@@ -532,6 +532,42 @@ vidět, jakou část dne ta vada udělala a jestli poslední dny roste.
 Osa Y toho grafu dřív dělila natvrdo tisíci, takže u projektu s denními
 částkami ve stovkách byly všechny popisky `0k`.
 
+### Co je pod pracovištěm — vady a díly
+
+Tabulka **Pracoviště** v Detailu projektu je s denními daty proklik
+(`pickPLoc`) — rozbalí se pod ní, co to pracoviště tvoří: **vady** a **díly**.
+Staví to `projLocDetail(m,p,loc)` v `js/core/aggregate.js`.
+
+**Vzniklo z konkrétní otázky:** montáž `ASY005` měla 177 ks za 5 453 € a nebylo
+poznat, jestli jsou to hotové sestavy nebo komponenty. **Průměr 31 €/ks** je
+u montáže IP nesmysl — hotová sestava stojí stovky eur. Proto má tabulka
+sloupec **EUR / ks** a rozpad ukáže, čím to je: pár drahých sestav plus
+desítky levných komponent.
+
+**Parser proto ukládá i `lokace¶díl`** (`P.li`, strop 30 položek na projekt
+a den). Dřív byl díl v `P.it` klíčovaný **jen číslem dílu, bez lokace**, takže
+se díly pod pracoviště rozpadnout nedaly — vady ano (`P.lr`), díly ne.
+
+**`li` plní až parser od 2. 10. 2026.** U dřív uložených dnů chybí a prázdný
+seznam by se dal splést s „žádné díly" — proto `projLocDetail` vrací `maDily`
+a UI u takového měsíce napíše, že se má report nahrát znovu. Vady a součty
+fungují i bez toho.
+
+**Jen z denních dat.** V měsíčním režimu (`MDET`) se neklikat nedá a je v UI
+napsané proč — i s odkazem na panel `Top scrap — pracoviště × příčina`, kde
+vady podle pracoviště jsou tak jako tak.
+
+Ověřeno na testovacím reportu: `ASY005` dá 1 695 € / 60 ks (28 €/ks), v rozpadu
+**ASM IP LHD BASE X540 — 3 ks za 1 350 € (450 €/ks)** vedle `BRACKET` 27 ks
+po 8 € a `CLIP` 30 ks po 4 €. Součet dílů i součet vad sedí na součet
+pracoviště; řádek `Excluded? = YES` ani kód 20 se nezapočítaly a `PSKR`/`pskr`
+se sloučily do jedné vady.
+
+**Pozor na kusy.** Sčítají se v **absolutní hodnotě**, takže opravný řádek
+(storno) počet kusů zvyšuje, ne snižuje — `CLIP` má v testu 30 ks z 25 + |−5|.
+A řádek bez kusů existuje: `Inventurní rozdíl` má 105 € a 0 ks, EUR/ks je tam
+proto pomlčka.
+
 ### Trend projektu — měsíc a kvartál
 
 Pátá dlaždice v **Detailu projektu**. Hlavní číslo je **vybraný měsíc proti
