@@ -60,10 +60,13 @@ function parseWB(wb){
     const ds=iS>=0?String(r[iS]||'').trim():'';
     const rk=cd+'§'+(ds||'—');
     const it=iI>=0?String(r[iI]||'').trim():'';
-    const P=day.p[pn]=day.p[pn]||{e:0,q:0,l:{},r:{},lr:{},it:{}};
+    const P=day.p[pn]=day.p[pn]||{e:0,q:0,l:{},r:{},lr:{},it:{},li:{}};
     P.e+=eur;P.q+=q;
     bump(P.l,lc,eur,q);bump(P.r,rk,eur,q);bump(P.lr,lc+'¶'+rk,eur,q);
-    if(it)bump(P.it,it,eur,q);used++}
+    /* `li` = pracoviště × díl. Bez něj se nedá odpovědět, z čeho se skládají
+       kusy na jednom pracovišti — `it` je klíčované jen číslem dílu, takže
+       u montáže není poznat, jestli jsou to hotové sestavy nebo komponenty. */
+    if(it){bump(P.it,it,eur,q);bump(P.li,lc+'¶'+it,eur,q)}used++}
   if(!used)throw new Error('Nenašel jsem žádné použitelné řádky se scrapem.');
   /* Do rozpadu se vejde jen `n` největších položek. Rozhoduje **absolutní**
      hodnota, ne kladná — QAD posílá i opravné řádky se záporným EUR a ty bývají
@@ -75,7 +78,8 @@ function parseWB(wb){
     .forEach(([k,v])=>o[k]={e:Math.round(v.e),q:Math.round(v.q)});return o};
   Object.values(days).forEach(d=>{d.eur=Math.round(d.eur);d.qty=Math.round(d.qty);
     Object.values(d.p).forEach(P=>{P.e=Math.round(P.e);P.q=Math.round(P.q);
-      P.l=trim(P.l,30);P.r=trim(P.r,40);P.lr=trim(P.lr,60);P.it=trim(P.it,20)})});
+      P.l=trim(P.l,30);P.r=trim(P.r,40);P.lr=trim(P.lr,60);P.it=trim(P.it,20);
+      P.li=trim(P.li,30)})});
   return{days,used,skip}}
 
 function handleFiles(list){
