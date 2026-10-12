@@ -84,7 +84,8 @@ function parseWB(wb){
 
 function handleFiles(list){
   const files=[...list];if(!files.length)return;
-  let done=0,add=0,rep=0;const errs=[],tg={months:0,sales:null,snap:null,stale:[],mdet:[]};
+  let done=0,add=0,rep=0;const errs=[],tg={months:0,sales:null,snap:null,stale:[],mdet:[],
+    hist:[],hpart:[],herr:[]};
   files.forEach(f=>{const rd=new FileReader();
     rd.onload=e=>{
       try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
@@ -101,13 +102,31 @@ function handleFiles(list){
         /* měsíční rozpad na pracoviště a vady — kvůli Detailu projektu
            a měsíčnímu trendu vad */
         try{applyMdet(wb).forEach(m=>{if(tg.mdet.indexOf(m)<0)tg.mdet.push(m)})}
-        catch(err){errs.push(f.name+' (měsíční rozpad): '+err.message)}}
+        catch(err){errs.push(f.name+' (měsíční rozpad): '+err.message)}
+        /* měsíční historie QLR z listu `overview mng` — až za targety, bere
+           z nich target do `QT` */
+        try{const h=applyHist(wb,res.days);
+          if(h.wrote)tg.hist.push([h.month,h.wrote]);
+          else if(h.skip==='part')tg.hpart.push(h.month);
+          else if(HSKIP[h.skip])tg.herr.push((h.month?mLabel(h.month)+': ':'')+HSKIP[h.skip])}
+        catch(err){errs.push(f.name+' (historie QLR): '+err.message)}}
       catch(err){errs.push(f.name+': '+err.message)}
       if(++done===files.length){save();
         const ks=Object.keys(DB).sort();if(ks.length)curMonth=ks[ks.length-1].slice(0,7);
         renderBar();renderDash();renderDays();renderTgt();renderQ();renderDefects();
+        renderSrc();
         if(curTab===3)renderProj();
+        /* Hláška je jediné místo, kde je vidět, co se z `overview mng`
+           přečetlo — proto se píšou rovnou čísla, ne jen „načteno". */
+        const hl=tg.hist.map(([k,h])=>mLabel(k)+' '+h.qw.toFixed(2).replace('.',',')+
+          ' % with tests / '+h.qo.toFixed(2).replace('.',',')+' % w/o ('+fE(h.ew)+')').join(', ');
+        const hx=tg.hist.length?' · do QLR '+hl:'';
         if(errs.length)toast('⚠ '+errs.join(' | '),'#C0392B');
+        else if(tg.herr.length)toast('✓ Načteno '+add+' nových dnů'+hx+
+          ' ⚠ historie QLR: '+tg.herr.join(' | '),'#E8A020');
+        else if(tg.hpart.length)toast('✓ Načteno '+add+' nových dnů'+hx+
+          ' ⚠ '+tg.hpart.map(mLabel).join(', ')+' už podle kalendáře skončil, ale data '+
+          'v souboru do konce měsíce nedojdou — do QLR se nezapsal, byl by to půlměsíc.','#E8A020');
         else if(tg.stale.length)toast('✓ Načteno '+add+' nových dnů'+
           (tg.months?' · targety pro '+plM(tg.months):'')+
           (tg.mdet.length?' · rozpad za '+plM(tg.mdet.length):'')+
@@ -117,7 +136,7 @@ function handleFiles(list){
         else toast('✓ Načteno '+add+' nových dnů'+(rep?', '+rep+' přepsáno':'')+
           (tg.months?' · targety z workplanu pro '+plM(tg.months):'')+
           (tg.mdet.length?' · měsíční rozpad za '+plM(tg.mdet.length):'')+
-          (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):''),'#27AE60')}};
+          (tg.sales?' · Sales '+fE(tg.sales)+' za '+mLabel(tg.snap):'')+hx,'#27AE60')}};
     rd.readAsArrayBuffer(f)})}
 const dz=document.getElementById('dropZone'),fi=document.getElementById('fileIn');
 dz.onclick=()=>fi.click();fi.onchange=()=>{handleFiles(fi.files);fi.value=''};

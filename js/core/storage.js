@@ -44,3 +44,52 @@ const mdetApply=()=>{
 const saveM=()=>{try{localStorage.setItem('yf_mdet',JSON.stringify(MDETI))}
   catch(e){toast('Nepodařilo se uložit měsíční rozpad: '+e.message,'#C0392B')}cloudSync()};
 mdetApply();
+
+/* Měsíční historie QLR z importu (klíč `yf_hist`). Leží nad tím, co je
+   zapsané v kódu (js/data/qlr-history.js), stejně jako MDETI nad MDET.
+
+   Zapsaná čísla jsou ověřená proti scrap reportu v době uzávěrky a QAD data
+   proti nim postupně driftují (červen o 3 078 €), takže **import je nikdy
+   nepřepisuje** — jen dopisuje měsíce, které v základu ještě nejsou. */
+let HISTI={};
+try{HISTI=JSON.parse(localStorage.getItem('yf_hist')||'{}')}catch(e){HISTI={}}
+const HIST0={LBL:LBL.slice(),QW:QW.slice(),QO:QO.slice(),QT:QT.slice(),
+             EO:EO.slice(),EW:EW.slice(),SV:SV.slice()};
+const HARR=[['LBL',LBL],['QW',QW],['QO',QO],['QT',QT],['EO',EO],['EW',EW],['SV',SV]];
+/* '2026-09' ↔ 'Zář 26' */
+const hLbl=k=>MO3[+k.slice(5,7)-1]+' '+k.slice(2,4);
+const hKey=l=>{const m=MO3.indexOf(String(l).slice(0,3));
+  return m<0?null:'20'+String(l).slice(-2)+'-'+String(m+1).padStart(2,'0')};
+const HBASE=hKey(HIST0.LBL[0]);
+const hIdx=k=>(+k.slice(0,4)-+HBASE.slice(0,4))*12+(+k.slice(5,7)-+HBASE.slice(5,7));
+/* index posledního zapsaného měsíce — co je pod ním, je ověřený základ */
+const hFixed=HIST0.LBL.length;
+
+/* Pole jsou pozičně svázaná s LBL a **musí zůstat spojitá** — jedna díra by
+   znamenala `QW[i].toFixed()` nad null, tedy prázdnou záložku QLR. Měsíc,
+   který by za posledním udělal mezeru, se proto přeskočí; stejně tak měsíc
+   bez kompletní čtveřice qw/qo/eo/ew. */
+function histApply(){
+  const n0=LBL.length;
+  HARR.forEach(([n,a])=>{a.length=0;HIST0[n].forEach(v=>a.push(v))});
+  Object.keys(HISTI).sort().forEach(k=>{
+    const h=HISTI[k];if(!h)return;
+    if(h.qw==null||h.qo==null||h.eo==null||h.ew==null)return;
+    const i=hIdx(k);if(i<hFixed||i>LBL.length)return;
+    if(i===LBL.length){LBL.push(hLbl(k));
+      QW.push(null);QO.push(null);QT.push(null);EO.push(null);EW.push(null);SV.push(null)}
+    QW[i]=h.qw;QO[i]=h.qo;EO[i]=h.eo;EW[i]=h.ew;
+    if(h.qt!=null)QT[i]=h.qt;
+    if(h.sv!=null)SV[i]=h.sv});
+  R12.length=0;
+  QW.forEach((_,i)=>R12.push(i<11?null
+    :+(QW.slice(i-11,i+1).reduce((a,b)=>a+b,0)/12).toFixed(4)));
+  /* Okno grafu rolling 12M se po přírůstku měsíce musí posunout. `qRoll()`
+     `rTo` jen shora ořezává (`if(rTo>QW.length-1)`), nikdy neposouvá nahoru,
+     takže by zůstalo na starém konci a nový měsíc by nebyl vidět — přesně to
+     se stávalo, když se měsíc dopisoval ručně. */
+  if(LBL.length!==n0&&typeof rTo!=='undefined'){
+    rTo=LBL.length-1;rFrom=Math.max(0,LBL.length-12)}}
+const saveH=()=>{try{localStorage.setItem('yf_hist',JSON.stringify(HISTI))}
+  catch(e){toast('Nepodařilo se uložit historii QLR: '+e.message,'#C0392B')}cloudCfg()};
+histApply();

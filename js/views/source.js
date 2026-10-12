@@ -72,11 +72,22 @@ function renderSrc(){
       const sales=Math.round(EW[i]/(QW[i]/100));
       const yr=l.slice(-2),bg=yr==='26'?'background:#EEF4FB':(yr==='25'?'background:#FBF7F2':'');
       const over=QT[i]!=null&&QO[i]>QT[i];
-      return '<tr style="'+bg+'"><td><b>'+l+'</b></td>'+
+      /* Odkud to číslo je. Zapsaný základ je ověřený proti scrap reportu,
+         měsíce z importu jsou z listu `overview mng` téhož exportu — a je
+         potřeba to v UI rozlišit, protože se nedají stejně brát za hotové. */
+      const imp=HISTI[hKey(l)];
+      return '<tr style="'+bg+'"><td><b>'+l+'</b>'+
+      (imp?'<div style="font-size:11px;color:var(--muted)">z exportu</div>':'')+'</td>'+
       '<td class="num"'+(over?' style="color:#C0392B"':'')+'>'+QO[i].toFixed(2)+' %</td>'+
       '<td class="num" style="color:var(--muted)">'+(QT[i]!=null?QT[i].toFixed(2)+' %':'—')+'</td>'+
       '<td class="num">'+(SV[i]!=null?fE(SV[i]):'—')+'</td>'+
       '<td class="num" style="color:var(--muted)">'+fE(sales)+'</td>'+
       '<td class="num">'+fE(EO[i])+'</td><td class="num">'+fE(EW[i])+'</td>'+
       '<td class="num"><b>'+QW[i].toFixed(2)+' %</b></td></tr>'}).join('')+
-    '</tbody></table>'}
+    '</tbody></table>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:9px">'+
+    'Měsíce bez poznámky jsou zapsané v kódu a ověřené proti scrap reportu. '+
+    'Měsíce <b>z exportu</b> přišly při importu z listu <b>overview mng</b>, '+
+    'sekcí <b>with tests</b> a <b>without tests</b> — zapisuje se jen uzavřený '+
+    'měsíc a ověřený základ se nikdy nepřepisuje. '+
+    'Saving se dopisuje až po uzávěrce ze scrap reportu, v exportu není.</div>'}

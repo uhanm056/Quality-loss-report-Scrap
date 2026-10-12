@@ -298,6 +298,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/import/rework-parser.js` | čtení reportů o reworku — sdílí pomocníky s `parser.js`, musí se načítat až za ním |
 | `js/import/target-parser.js` | čtení workplanu a Sales ze stejného souboru — listy `Target` a `overview mng` |
 | `js/import/mdet-parser.js` | staví `MDET` z listu `Data QAD` — vlastní průchod, protože potřebuje i řádky s kódem 20 |
+| `js/import/hist-parser.js` | měsíční historie QLR z listu `overview mng` — `LBL`, `QW`, `QO`, `QT`, `EO`, `EW` |
 | `js/main.js` | start aplikace |
 | `tools/bundle.py` | slepí aplikaci do jednoho HTML na poslání e-mailem — nepovinné, aplikace build nepotřebuje |
 | `.claude/skills/qlr-mesicni-report/` | postup na měsíční QLR report z QAD exportu — stejná metodika jako aplikace |
@@ -322,7 +323,8 @@ Funkce volané z HTML atributů (`onclick`, `onchange`) se přiřazují jako
 `window.nazev = ...`, aby zůstaly dostupné bez ohledu na to, ve kterém souboru jsou.
 
 Denní data se ukládají do `localStorage` prohlížeče (klíč `yf_scrap_daily_v2`),
-rework v `yf_rework_daily_v1`. Targety v `yf_tgtm` a `yf_ptgtm`, Sales projektů v `yf_psal`
+rework v `yf_rework_daily_v1`. Historie QLR z importu v `yf_hist`,
+měsíční rozpad v `yf_mdet`. Targety v `yf_tgtm` a `yf_ptgtm`, Sales projektů v `yf_psal`
 (ukládá je `saveP()` spolu s `PTGTM` — chodí ze stejného zdroje), nastavení
 v `yf_scrap_set_v1`. Záloha v záložce Data & import bere scrap i rework
 a **slučuje se, nepřepisuje** — dřív `DB=j.db` smazalo dny, které v záloze nebyly.
@@ -432,6 +434,87 @@ dosud zapsaný základ, srpen se opravil z projektových součtů ke snímku
 
 **Rok se bere z nejnovějšího řádku a starší roky se přeskočí** — `MDET` je
 klíčovaný jen číslem měsíce, takže dva roky v jednom souboru by se sečetly.
+
+### Měsíční historie QLR z importu
+
+Záložka **QLR měsíčně** byla dlouho jediná, která na import vůbec nesahala —
+`LBL`, `QW`, `QO`, `QT`, `EO` a `EW` se dopisovaly ručně do
+`js/data/qlr-history.js`, takže historie končila srpnem a září v grafu nebylo,
+i když všechno ostatní ho z exportu už mělo. Teď to plní
+`js/import/hist-parser.js` z listu **`overview mng`**.
+
+Ukládá se do `HISTI` (klíč `yf_hist`) **odděleně od zapsaného základu**,
+stejně jako `MDETI` nad `MDET`. `histApply()` v `js/core/storage.js` postaví
+pole znovu z `HIST0` (nedotčená kopie) a naskládá přes ně importované měsíce.
+
+```
+QW = sekce `with tests`    řádek Total, podíl ze Sales × 100
+EW = tatáž sekce,          EUR
+QO = sekce `without tests` řádek Total, podíl × 100
+EO = tatáž sekce,          EUR
+QT = TGTM[měsíc].t         (z listu `Target`, doplní ho target-parser.js)
+SV = nikdy                 saving se počítá až po uzávěrce, v exportu není
+```
+
+**Zapsaný základ se nikdy nepřepisuje.** QAD data proti scrap reportu
+postupně driftují (červen o 3 078 €), takže ověřená čísla v kódu platí
+a import jen dopisuje měsíce, které v základu ještě nejsou (`i < hFixed`).
+
+**Jen uzavřený měsíc.** `overview mng` je snímek k datu exportu, takže
+z neuzavřeného měsíce by do grafu spadl půlměsíc. `monthDone()` se ale neptá
+jen „jdou data do posledního dne" — na konci měsíce se nemusí vyrábět, takže
+by korektní export propadl. Bere i kalendář: měsíc, který podle kalendáře
+skončil a data dojdou na jeho poslední tři dny, je uzavřený. Probíhající
+měsíc se **mlčky** přeskočí (tak chodí denní reporty), měsíc, který skončil
+a data do konce nemá, se do hlášky napíše.
+
+**Pole musí zůstat spojitá.** Jsou pozičně svázaná s `LBL` a jedna díra by
+znamenala `QW[i].toFixed()` nad `null`, tedy prázdnou záložku QLR. Měsíc,
+který by za posledním udělal mezeru, se proto nezapíše a import to řekne.
+
+**Okno grafu se po přírůstku měsíce posune.** `qRoll()` `rTo` jen shora
+ořezává (`if(rTo>QW.length-1)`), nikdy neposouvá nahoru — bez toho by
+zůstalo na starém konci a nový měsíc by nebyl vidět, přesně jako když se
+měsíc dopisoval ručně. `histApply()` proto `rTo`/`rFrom` přenastaví, když
+se délka změnila. `R12` se přepočítá tamtéž.
+
+#### Dvě pojistky proti špatně přečtenému listu
+
+Stavba `overview mng` se v exportech může lišit, a špatně přečtený list by
+zapsal nesmysl do hlavního grafu. Proti tomu stojí dvě kontroly:
+
+**Měřítko podílu se ověřuje proti Sales z Pivotu.** V listu je podíl
+desetinný zlomek (0,018333 = 1,8333 %), takže se násobí stem — ale spoléhat
+na to naslepo nejde: kdyby soubor jednou držel přímo procento, vynásobením
+stem by graf skočil na 183 % a splynul s nulovou čárou, přesně jako kdysi
+u targetů. `pctScale()` proto zkusí obojí a vybere to, u kterého
+`EUR / podíl` dá obrat z Pivotu. Když nesedí ani jedno, nezapíše nic.
+
+**Čísla z listu se porovnají se součtem řádků exportu.** `histFromRaw()`
+spočítá `w/o tests` a `with tests` přímo z řádků (`with tests` = w/o tests
++ `Excluded? = YES`) — ověřeno na reálných datech na euro, červenec
+100 474 + 145 686 = 246 160 €, srpen 94 527 + 140 789 = 235 316 €. Jako
+**zdroj** se dopočet nepoužívá (u uzavřeného měsíce platí `overview mng`),
+ale jako kontrola chytí záměnu bloků: ta se projeví rozdílem v desítkách
+procent, zatímco tolerance je 5 %.
+
+Zařazení bloků rozhoduje **text hlavičky** (`without tests` / `with tests`;
+pozor, `/with\s*tests/` na „without tests" nesedí, po `with` následuje `out`).
+Když hlavička nic neříká — bývá jen „Scrap vs Sales" —, rozhodne velikost:
+w/o tests ≤ with tests ≤ Total.
+
+**Hláška po importu píše přečtená čísla**, ne jen „načteno" — je to jediné
+místo, kde je hned vidět, jestli se list přečetl správně.
+
+Který měsíc soubor je, řeší `snapMonth()` v `target-parser.js` — rok z dat,
+číslo měsíce z Pivotu, když ho uvádí. Sdílí to `applyTgt` i tenhle parser,
+aby to mělo v aplikaci jednu definici.
+
+Ve zdrojové tabulce (záložka **Zdrojová data**) je u měsíců z importu
+poznámka **z exportu**, aby se nepletly se zapsaným ověřeným základem.
+
+Sdílí se v konfiguračním dokumentu (`plant1032/konfig`) spolu s targety —
+kdo měsíc nahrál, pošle ho ostatním a nemusí ho dopisovat každý sám.
 
 ### Když scrap a Sales nejsou ke stejnému datu
 
@@ -772,7 +855,7 @@ Uložení ve Firestore:
 ```
 plant1032/scrap/dny/{den}     jeden den scrapu
 plant1032/rework/dny/{den}    jeden den reworku
-plant1032/konfig              TGTM, PTGTM, PSAL, SET
+plant1032/konfig              TGTM, PTGTM, PSAL, SET, HISTI
 ```
 
 **Obsah dne je uložený jako text v poli `json`, ne jako vnořený objekt.** Klíče
@@ -862,6 +945,6 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
       zůstává jako samostatný projekt.
 - [x] Srpen 2026 v grafu QLR — **235 316 € / 1,8333 %** ze sekce `with tests`
       v `overview mng`. Držela ho mimo chybná definice („with tests = `Excluded? = NO`")
-- [ ] Načítat historii QLR (`LBL`, `QW`, `EO`, `EW`, …) rovnou z exportu — teď se
-      pořád dopisuje ručně, i když `overview mng` má všechna čísla kromě `SV`
-      (saving se počítá až po uzávěrce)
+- [x] Načítat historii QLR (`LBL`, `QW`, `EO`, `EW`, …) rovnou z exportu —
+      dělá to `js/import/hist-parser.js` z listu `overview mng`. `SV` se dál
+      dopisuje ručně, saving se počítá až po uzávěrce a v exportu není.

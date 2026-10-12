@@ -142,6 +142,18 @@ function salesFromOverview(wb){
 
 const parseSalesSheet=wb=>salesFromPivot(wb)||salesFromOverview(wb);
 
+/* Měsíc, za který je soubor — rok vždycky z dat, číslo měsíce z Pivotu, když
+   ho uvádí. Bez toho by se Sales přiřadily špatně u souboru, kde poslední
+   řádek se scrapem spadne do jiného měsíce, než za který je souhrn.
+   Sdílí to `applyTgt` i `hist-parser.js`, aby „který měsíc tenhle export je"
+   mělo v aplikaci jednu definici. */
+function snapMonth(days,sal){
+  const ks=Object.keys(days||{}).sort();
+  if(!ks.length)return null;
+  const last=ks[ks.length-1];
+  return (sal&&sal.month)?last.slice(0,4)+'-'+String(sal.month).padStart(2,'0')
+                         :last.slice(0,7)}
+
 /* ── zápis do aplikace ─────────────────────────────────────────────────── */
 
 /* Workplan je autoritativní, takže targety se přepisují vždy. Sales jsou
@@ -164,12 +176,8 @@ function applyTgt(wb,days){
         const cur=o[p]||[null,null];
         o[p]=[v[0]!=null?v[0]:cur[0],v[1]!=null?v[1]:cur[1]];res.proj++})})}
 
-  /* Měsíc snímku: rok vždycky z dat, měsíc z Pivotu, když ho uvádí — jinak
-     taky z dat. Bez toho by se Sales přiřadily špatně u souboru, kde poslední
-     řádek se scrapem spadne do jiného měsíce, než za který je souhrn. */
   const ks=Object.keys(days||{}).sort();
-  let snap=ks.length?ks[ks.length-1].slice(0,7):null;
-  if(snap&&sal&&sal.month)snap=ks[ks.length-1].slice(0,4)+'-'+String(sal.month).padStart(2,'0');
+  const snap=snapMonth(days,sal);
   if(sal&&snap){
     const dd=ks.filter(x=>x.startsWith(snap));
     const last=dd.length?+dd[dd.length-1].slice(8):0,dim=daysInMonth(snap);
