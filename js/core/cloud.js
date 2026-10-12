@@ -264,7 +264,8 @@ window.cfgPush=()=>{
   try{CFGAT=new Date().toISOString();localStorage.setItem('yf_cfg_at',CFGAT)}catch(e){}
   if(CLOUD.sts!=='on')return;
   cKonf().set({at:CFGAT,by:CLOUD.user||'',
-    json:JSON.stringify({TGTM:TGTM,PTGTM:PTGTM,PSAL:PSAL,SET:SET})}).catch(cloudErr)};
+    json:JSON.stringify({TGTM:TGTM,PTGTM:PTGTM,PSAL:PSAL,SET:SET,HISTI:HISTI})
+  }).catch(cloudErr)};
 
 function cfgPull(d){
   if(!d.exists){if(CLOUD.sts==='on'&&CFGAT)cfgPush();return}
@@ -275,11 +276,14 @@ function cfgPull(d){
   if(j.PTGTM)Object.assign(PTGTM,j.PTGTM);
   if(j.PSAL)Object.assign(PSAL,j.PSAL);
   if(j.SET)Object.assign(SET,j.SET);
+  /* Historie QLR je po měsících, takže se slučuje jako ostatní — kdo nahrál
+     měsíc, pošle ho ostatním a nemusí ho dopisovat každý sám. */
+  if(j.HISTI){Object.assign(HISTI,j.HISTI);histApply()}
   CFGAT=at;try{localStorage.setItem('yf_cfg_at',CFGAT)}catch(e){}
   CLOUD.applying=true;
-  saveT();saveP();saveS();
+  saveT();saveP();saveS();if(j.HISTI)saveH();
   CLOUD.applying=false;
   document.getElementById('sRwTgt').value=SET.rwTarget;
   document.getElementById('sRwRate').value=SET.rwRate;
-  renderBar();renderTgt();renderDash();renderRework();
+  renderBar();renderTgt();renderDash();renderRework();renderQ();renderSrc();
   toast('☁ Targety a nastavení přišly ze sdílených dat.','#2E6DA4')}
