@@ -43,6 +43,39 @@ const mdetApply=()=>{
   Object.keys(MDETI).forEach(m=>{if(MDETI[m]&&MDETI[m].d)MDET[m]=MDETI[m].d})};
 const saveM=()=>{try{localStorage.setItem('yf_mdet',JSON.stringify(MDETI))}
   catch(e){toast('Nepodařilo se uložit měsíční rozpad: '+e.message,'#C0392B')}cloudSync()};
+/* ── překlep v názvu projektu ve starších uložených datech ──────────────
+   Import sjednocuje názvy přes `projKey()`, ale dny nahrané dřív si nesou
+   starý klíč — `G463` by zůstal viset vedle `G463 M` v datech, která se
+   znovu nenahrají. Projde se proto jednou při načtení. Je to idempotentní:
+   po doběhnutí už žádný klíč z `PALIAS` neexistuje.
+
+   Součty se nemění, jen se přesypou mezi projekty. */
+const addInto=(a,b)=>{Object.entries(b).forEach(([k,v])=>{
+  if(typeof v==='number')a[k]=(a[k]||0)+v;
+  else if(v&&typeof v==='object'&&!Array.isArray(v)){a[k]=a[k]||{};addInto(a[k],v)}})};
+/* řádky MDET jsou pole [klíč…, wt, wo, q] — `n` je, kolik vedoucích polí
+   tvoří klíč (L má jedno, R i P dvě); řadí se podle absolutní hodnoty wt,
+   protože opravné řádky jsou záporné */
+const addRows=(a,b,n)=>{const m={};
+  a.concat(b).forEach(r=>{const k=r.slice(0,n).join('\u00b6');
+    if(!m[k])m[k]=r.slice();
+    else for(let i=n;i<r.length;i++)m[k][i]+=r[i]});
+  return Object.values(m).sort((x,y)=>Math.abs(y[n])-Math.abs(x[n]))};
+function aliasFix(){
+  let n=0;
+  const mv=(map,fn)=>Object.entries(PALIAS).forEach(([src,dst])=>{
+    if(!map[src])return;
+    if(map[dst])fn(map[dst],map[src]);else map[dst]=map[src];
+    delete map[src];n++});
+  Object.values(DB).forEach(d=>{if(d&&d.p)mv(d.p,addInto)});
+  Object.values(RW).forEach(d=>{if(d&&d.p)mv(d.p,addInto)});
+  Object.values(MDETI).forEach(x=>{if(x&&x.d)mv(x.d,(a,b)=>{
+    a.wt+=b.wt;a.wo+=b.wo;
+    a.L=addRows(a.L||[],b.L||[],1);
+    a.R=addRows(a.R||[],b.R||[],2);
+    a.P=addRows(a.P||[],b.P||[],2)})});
+  return n}
+if(aliasFix()){save();saveR();saveM()}
 mdetApply();
 
 /* Měsíční historie QLR z importu (klíč `yf_hist`). Leží nad tím, co je

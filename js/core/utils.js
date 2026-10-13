@@ -33,6 +33,21 @@ const rsnKey=k=>{const t=String(k),i=t.indexOf('§');
   return i<0?t:t.slice(0,i).toUpperCase()+t.slice(i)};
 const lrKey=k=>{const t=String(k),i=t.indexOf('¶');
   return i<0?rsnKey(t):t.slice(0,i+1)+rsnKey(t.slice(i+1))};
+/* Název projektu chodí ze sloupce `Group 2`, což je volný text, takže se v něm
+   objevují překlepy. `G463` bez „M" je jeden jediný řádek za celý rok —
+   duben 2026, 700 €, 0 ks, pracoviště INT-HOLD (QH interní díly), kód 21
+   Nečistota/prach. Ve scrap reportu takový projekt vůbec není, G-Class je
+   `G463 M`, takže je to odpis z kvalitativní blokace zapsaný bez varianty.
+
+   Mapa je schválně **výčtová, ne pravidlo**: „usekni poslední písmeno" nebo
+   „když je to prefix jiného projektu, slouč" by slepilo i projekty, které
+   spolu nemají nic společného. Další překlep se sem dopíše jedním řádkem.
+
+   Sjednocuje se **při importu**, takže měsíční součty se nemění — 700 € jen
+   přejde z vlastního řádku pod `G463 M`. */
+const PALIAS={'G463':'G463 M'};
+const projKey=s=>{const t=String(s==null?'':s).trim();return PALIAS[t]||t};
+
 /* sloučí dvojice [klíč,{e,…}] podle klíče a seřadí sestupně podle EUR */
 const mergeBy=(pairs,fn)=>{const o={};
   pairs.forEach(([k,v])=>{const key=fn?fn(k):k,x=o[key]=o[key]||{e:0,q:0};

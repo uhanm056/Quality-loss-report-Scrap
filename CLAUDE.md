@@ -233,6 +233,33 @@ proti celému 2025 dá „ušetřeno 270 020 €"; proti stejným osmi měsíců
 **28 277 €**. `yrRows()` proto u neúplného roku bere z předchozího roku jen
 tolik měsíců, kolik má ten letošní, a do UI napíše, proti čemu se srovnává.
 
+**Názvy projektů z QAD mají překlepy a sjednocuje je `PALIAS`.** `Group 2` je
+volný text. `G463` bez „M" byl za celý rok **jeden řádek**: duben 2026, 700 €,
+**0 ks**, pracoviště `INT-HOLD` (QH interní díly), kód 21 Nečistota/prach —
+odpis z kvalitativní blokace zapsaný bez varianty. Ve scrap reportu takový
+projekt není, G-Class je `G463 M`.
+
+Mapa `PALIAS` v `js/core/utils.js` je schválně **výčtová, ne pravidlo** —
+„usekni poslední písmeno" nebo „prefix jiného projektu slouč" by spojilo
+i projekty, které spolu nemají nic společného. Další překlep je jeden řádek.
+
+Protahuje se přes `projKey()` všude, kde název projektu vstupuje do aplikace:
+`parser.js`, `mdet-parser.js`, `rework-parser.js` i `tProj()`
+v `target-parser.js` (ten měl vlastní mapu `TPROJ` na tvar z listu `Target`,
+teď jde její výsledek ještě přes `projKey`).
+
+**Dřív uložená data se opraví při načtení** — `aliasFix()` v `js/core/storage.js`
+projde `DB`, `RW` i `MDETI` a přesype projekt pod správný klíč. Bez toho by
+`G463` zůstal viset ve dnech, které se znovu nenahrají. Je to idempotentní.
+Cizí data, která přijdou ze sdílení až po načtení stránky, se srovnají
+až při příštím otevření.
+
+**Součty se nemění, jen se přesypou mezi projekty.** Duben 2026 dá w/o tests
+74 052 € před i po; `G463 M` jde z 49 656 / 34 576 € na **50 356 / 35 276 €**
+a přibude mu pracoviště `INT-HOLD`. Zapsaný základ (`MDET`, `MONTHLY`) je
+sloučený natvrdo, takže to platí i bez importu. Do UI se to píše
+(`aliasNote()` v `js/views/source.js`), aby nebylo záhadou, kam se projekt poděl.
+
 **Report obsahuje jen 11 projektů.** QAD má navíc PO455, V530, YFA, W520.
 Součty se proto mohou lišit — pro srovnání s reportem filtrovat na projekty z reportu.
 
@@ -275,7 +302,7 @@ posunout i bloky `<div class="view">` a indexy v `js/core/nav.js`
 | `js/data/targets.js` | `TGTM`, `PTGTM`, `PSAL`, `AUG` + `mKey`/`mTgt`/`mSales`/`pTgt`/`pSales` |
 | `js/data/locations.js` | `LOCNAMES` — názvy pracovišť |
 | `js/data/firebase-config.js` | konfigurace sdílení dat — prázdná = sdílení vypnuté |
-| `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI |
+| `js/core/utils.js` | registrace Chart.js, formátovače, `mk()`, `toast()`, stav UI, sjednocení klíčů (`rsnKey`, `lrKey`, `projKey`/`PALIAS`) |
 | `js/core/storage.js` | `localStorage` — načtení a ukládání |
 | `js/core/aggregate.js` | součty a rozpady denních dat |
 | `js/core/daily.js` | rozpad jednoho dne, porovnání dnů, přepínač EUR / € na kus |
@@ -940,9 +967,8 @@ Tmavě modré hlavičky panelů, KPI karty s barevným levým pruhem.
       to dá i QAD soubor. Poznámka o 6 269 € byla zastaralá.
 - [x] Skutečné Sales za srpen — **12 835 650 €** ze srpnového exportu,
       snímek k 23. 8. (7 711 715 €) byl skoro o polovinu nižší
-- [ ] Rozhodnout, co s projektem `G463` — jeden řádek za 700 € v dubnu, evidentně
-      překlep v `Group 2` místo `G463 M`. Data se nemění bez zdroje, takže zatím
-      zůstává jako samostatný projekt.
+- [x] Projekt `G463` — překlep v `Group 2`, sjednocuje se přes `PALIAS`
+      v `js/core/utils.js` pod `G463 M`. Měsíční součty se tím nemění.
 - [x] Srpen 2026 v grafu QLR — **235 316 € / 1,8333 %** ze sekce `with tests`
       v `overview mng`. Držela ho mimo chybná definice („with tests = `Excluded? = NO`")
 - [x] Načítat historii QLR (`LBL`, `QW`, `EO`, `EW`, …) rovnou z exportu —

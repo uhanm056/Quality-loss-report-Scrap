@@ -90,4 +90,17 @@ function renderSrc(){
     'Měsíce <b>z exportu</b> přišly při importu z listu <b>overview mng</b>, '+
     'sekcí <b>with tests</b> a <b>without tests</b> — zapisuje se jen uzavřený '+
     'měsíc a ověřený základ se nikdy nepřepisuje. '+
-    'Saving se dopisuje až po uzávěrce ze scrap reportu, v exportu není.</div>'}
+    'Saving se dopisuje až po uzávěrce ze scrap reportu, v exportu není.'+
+    aliasNote()+'</div>'}
+
+/* Sjednocené názvy projektů se musí napsat do UI — jinak by nebylo poznat,
+   proč se projekt z QAD v aplikaci neobjeví. Text se staví z `PALIAS`, aby
+   zůstal pravdivý i po dopsání dalšího překlepu. */
+function aliasNote(){
+  const a=Object.entries(PALIAS);
+  if(!a.length)return '';
+  return ' Názvy projektů z QAD se sjednocují: '+
+    a.map(([s,d])=>'<b>'+escH(s)+'</b> → <b>'+escH(d)+'</b>').join(', ')+
+    ' — <code>Group 2</code> je volný text a tyhle hodnoty jsou překlepy, '+
+    've scrap reportu takový projekt není. Měsíční součty se tím nemění, '+
+    'jen se částka přesype pod správný projekt.'}

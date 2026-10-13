@@ -29,7 +29,7 @@
 /* název projektu v listu Target → název v aplikaci */
 const TPROJ={'G463M':'G463 M','OV51_52':'OV51/52','SK336_1':'SK336/1'};
 const tProj=s=>{const n=String(s||'').split(' - ')[0].trim();
-  return TPROJ[n]||n.replace(/_/g,'/')};
+  return projKey(TPROJ[n]||n.replace(/_/g,'/'))};
 
 const TMON=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 /* desetinný podíl → procento na čtyři místa; nula znamená „projekt ještě neběží" */

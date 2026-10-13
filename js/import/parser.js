@@ -54,7 +54,7 @@ function parseWB(wb){
     const k=iso(d),q=Math.abs(Number(r[iQ])||0);
     const day=days[k]=days[k]||{eur:0,qty:0,p:{}};
     day.eur+=eur;day.qty+=q;
-    const pn=(iP>=0?String(r[iP]||'').trim():'')||'Neurčeno';
+    const pn=projKey(iP>=0?r[iP]:'')||'Neurčeno';
     const lc=(iL>=0?String(r[iL]||'').trim().toUpperCase():'')||'—';
     const cd=(iC>=0&&iC!==iS)?String(r[iC]||'').trim():'';
     const ds=iS>=0?String(r[iS]||'').trim():'';

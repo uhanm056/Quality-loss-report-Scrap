@@ -55,7 +55,7 @@ function parseMdet(wb){
     (dny[mo]=dny[mo]||{})[d.getDate()]=1;   /* kolik dnů měsíce soubor pokrývá */
     const sup=iC>=0&&String(r[iC]||'').trim()==='20';   /* 20 = dodavatel */
     const wo=sup?0:eur,q=Math.abs(Number(r[iQ])||0),qo=sup?0:q;
-    const pn=(String(r[iP]||'').trim())||'Neurčeno';
+    const pn=projKey(r[iP])||'Neurčeno';
     const M=out[mo]=out[mo]||{};
     const P=M[pn]=M[pn]||{wt:0,wo:0,l:{},r:{},p:{}};
     P.wt+=eur;P.wo+=wo;
