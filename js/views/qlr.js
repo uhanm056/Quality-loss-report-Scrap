@@ -18,7 +18,32 @@ function renderQ(){
     '<div class="kpi-s">předchozí '+fk(EO[N-1])+'</div></div>'+
   '<div class="kpi g"><div class="kpi-l">Saving 2026 kumulativ</div><div class="kpi-v">'+fE(sav)+'</div>'+
     '<div class="kpi-s">leden – '+LBL[N]+'</div></div>';
+  qMissing();
   if(qSub===0){qRoll();renderTop()}if(qSub===1)qYoY();if(qSub===2)qEur()}
+
+/* Historie QLR se plní **jen při importu** z listu `overview mng` — ze sebe
+   se nedoplní. Kdo nahrál zářijový report ještě před tím, než to aplikace
+   uměla, má září v denních datech i v MDET, ale v grafu QLR ne, a nemá jak
+   poznat proč. Tenhle pruh to říká nahlas a jmenuje konkrétní měsíc.
+
+   Berou se jen měsíce, které už podle kalendáře skončily — probíhající měsíc
+   do historie stejně nepatří (byl by to půlměsíc). */
+function qMissing(){
+  const box=document.getElementById('qMiss');if(!box)return;
+  const last=hKey(LBL[LBL.length-1]),cur=curKey(),m={};
+  Object.keys(MDET).forEach(k=>{const x='2026-'+String(k).padStart(2,'0');
+    if(x>last&&x<cur)m[x]=1});
+  Object.keys(DB).forEach(d=>{const x=d.slice(0,7);if(x>last&&x<cur)m[x]=1});
+  const ks=Object.keys(m).sort();
+  if(!ks.length){box.innerHTML='';return}
+  box.innerHTML='<div class="warnbox" style="margin:0 0 14px">'+
+    '<span style="font-size:26px">📈</span><div><b>'+
+    ks.map(mLabel).join(', ')+' '+(ks.length===1?'je':'jsou')+' v datech, ale '+
+    'v historii QLR '+(ks.length===1?'chybí':'chybějí')+'.</b> Graf končí '+
+    LBL[LBL.length-1]+'. Historie se plní jen při importu z listu '+
+    '<b>overview mng</b>, zpětně se z uložených dat nedopočítá — '+
+    'nahrajte v <b>Data &amp; import</b> měsíční export, jehož data jdou '+
+    'do konce měsíce, a QLR se z něj doplní samo.</div></div>'}
 
 function qRoll(){
   const f=document.getElementById('rFrom'),t=document.getElementById('rTo');

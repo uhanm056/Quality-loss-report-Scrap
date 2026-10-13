@@ -533,6 +533,14 @@ w/o tests ≤ with tests ≤ Total.
 **Hláška po importu píše přečtená čísla**, ne jen „načteno" — je to jediné
 místo, kde je hned vidět, jestli se list přečetl správně.
 
+**Zpětně se historie nedopočítá.** Plní se **jen při importu** — kdo nahrál
+zářijový report dřív, než to aplikace uměla, má září v `DB` i v `MDET`, ale
+v grafu QLR ne, protože soubor se neukládá a `overview mng` už není kde vzít.
+Bez upozornění je to slepá ulička: graf prostě končí srpnem a není poznat proč.
+`qMissing()` v `js/views/qlr.js` proto porovná poslední měsíc historie s tím,
+co je v `MDET` a `DB`, a nad grafem napíše, který měsíc chybí a co s tím —
+probíhající měsíc vynechá, ten do historie stejně nepatří.
+
 Který měsíc soubor je, řeší `snapMonth()` v `target-parser.js` — rok z dat,
 číslo měsíce z Pivotu, když ho uvádí. Sdílí to `applyTgt` i tenhle parser,
 aby to mělo v aplikaci jednu definici.
