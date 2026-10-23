@@ -214,6 +214,14 @@ function renderProj(){
   const wL=L[0],wR=R[0];
   const pt=mm?pTgt(mm,curProj):null,ps=mm?pSales(mm,curProj):null;
   const act=ps?me.e/ps*100:null;
+  /* Sales projektu do vlastní dlaždice — je to číslo, ze kterého se počítá
+     procento i volba metriky u trendu, a bez něj dlaždice mlčky spadnou
+     na EUR. Vedle částky stojí podíl na obratu závodu a změna proti
+     předchozímu měsíci: scrap v EUR často spadne jen proto, že klesla
+     výroba, a tady je to vidět vedle sebe. */
+  const psPrev=mm>1?pSales(mm-1,curProj):null;
+  const psTot=mm?mSales(mm):null;
+  const psRel=(ps&&psPrev)?(ps-psPrev)/psPrev*100:null;
   const QT=mm?projQuarter(mm,curProj):null,MT=mm?projMoM(mm,curProj):null;
 
   const srcNote=SRC==='day'
@@ -223,20 +231,23 @@ function renderProj(){
   box.innerHTML=
   '<div style="display:flex;gap:8px;flex-wrap:wrap">'+projs.map(p=>
     '<button class="chip b '+(p[0]===curProj?'on':'')+'" onclick="pickProj(\''+esc(p[0])+'\')">'+p[0]+'</button>').join('')+'</div>'+
-  '<div class="grid5">'+
+  '<div class="grid6">'+
   '<div class="kpi b"><div class="kpi-l">'+curProj+' · '+MN[mm-1]+'</div><div class="kpi-v">'+fE(me.e)+'</div>'+
     '<div class="kpi-s">'+Math.round(me.e/tot*100)+' % scrapu závodu</div></div>'+
+  '<div class="kpi a"><div class="kpi-l">Sales projektu · '+MN[mm-1]+'</div>'+
+    '<div class="kpi-v" style="font-size:23px">'+(ps?fE(ps):'—')+'</div>'+
+    '<div class="kpi-s">'+(ps
+      ?(psTot?Math.round(ps/psTot*100)+' % obratu závodu':'obrat závodu nezadaný')+
+       (psRel!=null?' · proti '+MN[mm-2]+' '+(psRel>0?'+':'−')+
+         Math.abs(psRel).toFixed(0)+' %':'')
+      :'<span style="color:var(--red)">pro tenhle měsíc nejsou — doplňte je '+
+       'v Nastavení</span>')+'</div></div>'+
   '<div class="kpi '+(act&&pt&&pt[0]!=null&&act>pt[0]?'r':'g')+'"><div class="kpi-l">% ze Sales projektu</div>'+
     '<div class="kpi-v">'+(act!=null?act.toFixed(2)+' %':'—')+'</div>'+
     '<div class="kpi-s">'+(pt&&pt[0]!=null?'target '+pt[0].toFixed(2)+' %'+
       /* přísnější cíl s CI taskem — u projektu ho taky nemá každý měsíc */
       (pt[1]!=null?' · s CI taskem '+pt[1].toFixed(2)+' %':''):'target neznámý')+'</div>'+
-    /* Číslo, ze kterého se to procento počítá. Když Sales projektu chybí,
-       je v dlaždici jen pomlčka a nebylo poznat proč — teď se to napíše
-       i s tím, kde se to doplní. */
-    '<div class="kpi-s">'+(ps?'Sales '+fE(ps)
-      :'<span style="color:var(--red)">Sales projektu pro tenhle měsíc nejsou — '+
-       'doplňte je v Nastavení</span>')+'</div></div>'+
+    '</div>'+
   '<div class="kpi r"><div class="kpi-l">Nejdražší pracoviště</div>'+
     '<div class="kpi-v" style="font-size:19px">'+(wL?locName(wL[0]):'—')+'</div>'+
     '<div class="kpi-s">'+(wL?fE(wL[1].e)+' · '+Math.round(wL[1].e/me.e*100)+' % projektu':'bez rozpadu')+'</div></div>'+

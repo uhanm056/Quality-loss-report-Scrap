@@ -573,9 +573,15 @@ Měsíce se berou ze sjednocení `PSAL` a `TGTM`, takže jde doplnit i měsíc, 
 Sales projektů zatím nemá; projekty ze sjednocení `PSAL` a `PTGTM`, takže projekt
 s targetem, ale bez Sales, má prázdný řádek k vyplnění.
 
-V Detailu projektu je u KPI **% ze Sales projektu** pod targetem i samotná
-částka. Když Sales chybí, je v dlaždici jen pomlčka — dřív nebylo poznat proč,
-teď se tam napíše, že chybí a kde se doplní.
+V Detailu projektu má Sales **vlastní dlaždici** vedle scrapu v EUR — řada je
+proto `grid6` (6 sloupců, 4 pod 1700 px, 3 pod 1400, 2 pod 1000). Vedle částky
+stojí **podíl na obratu závodu** a **změna proti předchozímu měsíci**, protože
+scrap v EUR často spadne jen proto, že klesla výroba, a takhle je to vidět vedle
+sebe: G463 M má v srpnu 4 482 697 € Sales, tedy −42 % proti červenci, a dlaždice
+trendu vedle toho správně hlásí +0,09 p.b. **hůř**.
+
+Když Sales chybí, je v dlaždici pomlčka a napíše se, že se doplní v Nastavení —
+dřív stála pomlčka jen u procenta a nebylo poznat proč.
 
 ### Když scrap a Sales nejsou ke stejnému datu
 
