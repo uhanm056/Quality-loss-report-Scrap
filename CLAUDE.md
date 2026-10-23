@@ -283,8 +283,9 @@ Pořadí dlaždic drží tři přehledy vepředu, detaily a správu vzadu:
 6. **Data & import** — nahrávání denních reportů, seznam dnů, záloha
    a panel **Sdílení dat** (stav sdílení, přihlášení).
 7. **Zdrojová data** — vzorec, roční souhrn, měsíční tabulka.
-8. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety.
-   Cíl scrapu se tu **nezadává** — počítá se jako target % × Sales.
+8. **Nastavení** — cíl a sazba reworku, měsíční a projektové targety
+   a **Sales po projektech**. Cíl scrapu se tu **nezadává** — počítá se
+   jako target % × Sales.
 
 Záložky se přepínají podle **pořadí v DOM**, ne podle `id` — `go(i)` sahá na
 `querySelectorAll('.view')[i]`. Když se dlaždice přeskládají, musí se spolu s nimi
@@ -550,6 +551,31 @@ poznámka **z exportu**, aby se nepletly se zapsaným ověřeným základem.
 
 Sdílí se v konfiguračním dokumentu (`plant1032/konfig`) spolu s targety —
 kdo měsíc nahrál, pošle ho ostatním a nemusí ho dopisovat každý sám.
+
+### Sales po projektech
+
+Tabulka **Sales po projektech** v Nastavení (`renderPSal()` v `js/views/targets.js`)
+— projekty v řádcích, měsíce ve sloupcích, každá buňka k přepsání.
+
+`PSAL` chodí z listu `Pivot` při importu, ale **vidět nebyly nikde**, přitom se
+z nich počítá „% ze Sales projektu" v Detailu projektu a podle toho, jestli je
+aplikace zná, se u **trendu projektu** volí srovnání v p.b. místo v EUR. Bez nich
+dlaždice mlčky spadne na EUR a projekt, kterému klesla výroba, vypadá jako
+zlepšený — to je přesně ten případ G463 M v srpnu.
+
+**Součet přes projekty musí sednout na Sales závodu** z tabulky výš. Na reálných
+datech to vychází na euro: červen i červenec přesně, srpen o 2 € kvůli
+zaokrouhlení. Řádek `Celkem` to proto hlídá a nad `max(10 €, 0,1 %)` napíše
+červeně, o kolik se to rozchází — znamená to chybějící projekt nebo špatné číslo.
+Pod tolerancí stojí zeleně „sedí na závod".
+
+Měsíce se berou ze sjednocení `PSAL` a `TGTM`, takže jde doplnit i měsíc, který
+Sales projektů zatím nemá; projekty ze sjednocení `PSAL` a `PTGTM`, takže projekt
+s targetem, ale bez Sales, má prázdný řádek k vyplnění.
+
+V Detailu projektu je u KPI **% ze Sales projektu** pod targetem i samotná
+částka. Když Sales chybí, je v dlaždici jen pomlčka — dřív nebylo poznat proč,
+teď se tam napíše, že chybí a kde se doplní.
 
 ### Když scrap a Sales nejsou ke stejnému datu
 

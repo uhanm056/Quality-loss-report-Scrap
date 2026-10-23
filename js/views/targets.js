@@ -55,7 +55,54 @@ function renderTgt(){
       '</tr>'}).join('')+'</tbody></table>'+
     '<div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7">'+
     'Targety projektů se každý měsíc mění — X540 měl v červenci 0,37 %, v srpnu 0,63 %. '+
-    'Pro měsíc bez vlastních hodnot se použije poslední dřívější měsíc.</div>'}
+    'Pro měsíc bez vlastních hodnot se použije poslední dřívější měsíc.</div>';
+  renderPSal()}
+
+/* Sales po projektech (`PSAL`). Chodí z listu `Pivot` při importu, ale vidět
+   nebyly nikde — přitom se z nich počítá „% ze Sales projektu" v Detailu
+   projektu i volba metriky u trendu projektu (p.b. vs. EUR). Bez nich dlaždice
+   mlčky přepne na EUR a není poznat proč.
+
+   Součet přes projekty **musí sednout na Sales závodu** z tabulky výš —
+   na reálných datech to vychází na euro (červen i červenec přesně, srpen
+   o 2 € kvůli zaokrouhlení). Když nesedí, chybí projekt nebo je číslo špatně,
+   a napíše se to do řádku `Celkem`. */
+function renderPSal(){
+  const el=document.getElementById('psalBody');if(!el)return;
+  /* měsíce z obojího — ať se dá doplnit i měsíc, který Sales projektů nemá */
+  const mks=[...new Set(Object.keys(PSAL).concat(Object.keys(TGTM)))].sort();
+  const names=[...new Set(Object.keys(PSAL).flatMap(k=>Object.keys(PSAL[k]))
+    .concat(Object.keys(PTGTM).flatMap(k=>Object.keys(PTGTM[k]))))].sort();
+  if(!mks.length||!names.length){
+    el.innerHTML='<div class="empty">Zatím nejsou žádné projekty ani měsíce.</div>';return}
+  const mLab=k=>MO3[+k.slice(5,7)-1]+' '+k.slice(2,4);
+  el.innerHTML='<table class="tbl"><thead><tr><th>Projekt</th>'+
+    mks.map(k=>'<th class="num">'+mLab(k)+'</th>').join('')+'</tr></thead><tbody>'+
+    names.map(n=>'<tr><td><b>'+escH(n)+'</b></td>'+mks.map(k=>
+      '<td class="num"><input class="inp" style="width:116px" type="number" value="'+
+      ((PSAL[k]||{})[n]!=null?PSAL[k][n]:'')+
+      '" onchange="setPS(\''+k+'\',\''+esc(n)+'\',this.value)"></td>').join('')+'</tr>').join('')+
+    '<tr style="background:#EEF4FB"><td><b>Celkem</b></td>'+mks.map(function(k){
+      const vals=Object.values(PSAL[k]||{});
+      if(!vals.length)return '<td class="num" style="color:var(--muted)">—</td>';
+      const sum=vals.reduce((a,b)=>a+b,0),tot=(TGTM[k]||{}).sales;
+      /* pár eur je zaokrouhlení, víc znamená chybějící projekt */
+      const d=tot?sum-tot:null,zle=d!=null&&Math.abs(d)>Math.max(10,tot*0.001);
+      return '<td class="num"><b>'+fE(sum)+'</b>'+
+        (tot==null?'<div style="font-size:11px;color:var(--muted)">Sales závodu nezadané</div>'
+         :zle?'<div style="font-size:11px;color:var(--red)">'+(d>0?'+':'−')+fE(Math.abs(d))+
+              ' proti závodu</div>'
+         :'<div style="font-size:11px;color:var(--green)">sedí na závod</div>')+'</td>'}).join('')+
+    '</tr></tbody></table>'+
+    '<div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7">'+
+    'Načítá se při importu z listu <b>Pivot</b>, sloupec <code>Sales EUR</code>. '+
+    'Počítá se z nich <b>% ze Sales projektu</b> v Detailu projektu a podle toho, '+
+    'jestli je aplikace zná, se u <b>trendu projektu</b> volí srovnání v p.b. '+
+    'místo v EUR — bez nich vypadá projekt, kterému klesla výroba, jako zlepšený. '+
+    'Řádek <b>Celkem</b> hlídá, že součet sedí na Sales závodu z tabulky výš.</div>'}
+window.setPS=(k,n,v)=>{PSAL[k]=PSAL[k]||{};
+  if(v==='')delete PSAL[k][n];else PSAL[k][n]=Math.round(+v);
+  saveP();renderPSal();if(curTab===3)renderProj();toast('✓ Uloženo.','#27AE60')};
 window.setPT=(k,n,i,v)=>{PTGTM[k]=PTGTM[k]||{};PTGTM[k][n]=PTGTM[k][n]||[null,null];
   PTGTM[k][n][i]=v===''?null:+v;
   saveP();

@@ -230,7 +230,13 @@ function renderProj(){
     '<div class="kpi-v">'+(act!=null?act.toFixed(2)+' %':'—')+'</div>'+
     '<div class="kpi-s">'+(pt&&pt[0]!=null?'target '+pt[0].toFixed(2)+' %'+
       /* přísnější cíl s CI taskem — u projektu ho taky nemá každý měsíc */
-      (pt[1]!=null?' · s CI taskem '+pt[1].toFixed(2)+' %':''):'target neznámý')+'</div></div>'+
+      (pt[1]!=null?' · s CI taskem '+pt[1].toFixed(2)+' %':''):'target neznámý')+'</div>'+
+    /* Číslo, ze kterého se to procento počítá. Když Sales projektu chybí,
+       je v dlaždici jen pomlčka a nebylo poznat proč — teď se to napíše
+       i s tím, kde se to doplní. */
+    '<div class="kpi-s">'+(ps?'Sales '+fE(ps)
+      :'<span style="color:var(--red)">Sales projektu pro tenhle měsíc nejsou — '+
+       'doplňte je v Nastavení</span>')+'</div></div>'+
   '<div class="kpi r"><div class="kpi-l">Nejdražší pracoviště</div>'+
     '<div class="kpi-v" style="font-size:19px">'+(wL?locName(wL[0]):'—')+'</div>'+
     '<div class="kpi-s">'+(wL?fE(wL[1].e)+' · '+Math.round(wL[1].e/me.e*100)+' % projektu':'bez rozpadu')+'</div></div>'+
